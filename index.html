@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>gfx - lab1c</title>
+  <script src="js/main.js" type="module" defer></script>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+
+<body>
+
+  <h2>GFX Lab1c 2023</h2>
+
+  <label for="accept">
+    <input type="checkbox" id="accept" name="accept" value="yes">
+    Activate cheatmode
+  </label>
+
+  <div class="button-wrapper">
+    <button id="playButton">Play Audio</button>
+    <button id="stopButton">Stop Audio</button>
+    <input id="clickMe" type="button" value="Restart Game" onclick="restartGame();" />
+  </div>
+
+  <audio id="audioPlayer" src="audio/tetris-theme.mp3" loop></audio>
+
+  <div class="slider">
+    <label for="ambientProduct">Ambient</label>
+    <input type="range" min="0" max="100" value="40" class="slider" id="ambientProduct">
+
+    <label for="diffuseProduct">Diffuse</label>
+    <input type="range" min="0" max="100" value="70" class="slider" id="diffuseProduct">
+
+    <label for="specularProduct">Specular</label>
+    <input type="range" min="0" max="100" value="100" class="slider" id="specularProduct">
+  </div>
+
+  &nbsp;
+
+  <canvas id="glcanvas" width="550" height="850"></canvas>
+
+  <video id="webcam" autoplay playsinline style="
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 160px;
+      border-radius: 8px;
+      z-index: 100;
+    ">
+  </video>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
+
+  <script type="module">
+
+    import {
+      GestureRecognizer,
+      FilesetResolver
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+
+    let gestureRecognizer;
+    let ultimoGesto = "None";
+    let ultimaVezVideo = -1;
+
+    let voiceRecognizer = null;
+    let vozActiva = false;
+
+    let ultimoComandoVoz = "";
+    let ultimoTiempoVoz = 0;
+    let ultimaPalabraVoz = "";
+
+    const UMBRAL_VOZ = 0.9;
+    const COOLDOWN_COMANDO_VOZ = 700;
+    async function pedirMicConConfiguracion() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: false,
+          channelCount: 1
+        },
+        video: false
+      });
+
+      return stream;
+    }
+    
+
+
+    async function iniciarReconocimientoVoz() {
+  console.log("🎤 Cargando TensorFlow.js...");
+
+  try {
+    const stream = await pedirMicConConfiguracion();
+
+    voiceRecognizer = speechCommands.create("BROWSER_FFT");
+    await voiceRecognizer.ensureModelLoaded();
+
+    console.log("🎤 Modelo de voz cargado.");
+
+    const palabras = voiceRecognizer.wordLabels();
+    console.log("Palabras disponibles:", palabras);
+
+    voiceRecognizer.listen(
+      resultado => {
+        procesarResultadoVoz(resultado, palabras);
+      },
+      {
+        includeSpectrogram: false,
+        probabilityThreshold: UMBRAL_VOZ,
+        invokeCallbackOnNoiseAndUnknown: false
+      }
+    );
+
+    vozActiva = true;
+    console.log("Reconocimiento de voz ACTIVO.");
+  } catch (error) {
+    console.error("Error iniciando TensorFlow.js:", error);
+  }
+}
+
+    function procesarResultadoVoz(resultado, palabras) {
+      const scores = resultado.scores;
+      let mejorIndice = 0;
+
+      for (let i = 1; i < scores.length; i++) {
+        if (scores[i] > scores[mejorIndice]) {
+          mejorIndice = i;
+        }
+      }
+
+      const palabra = palabras[mejorIndice];
+      const confianza = scores[mejorIndice];
+
+      console.log(
+        "🎤 Voz:", palabra,
+        "| confianza:", (confianza * 100).toFixed(1) + "%"
+      );
+
+      if (
+        confianza < UMBRAL_VOZ ||
+        palabra === "unknown" ||
+        palabra === "_unknown_" ||
+        palabra === "noise" ||
+        palabra === "_background_noise_"
+      ) {
+        return;
+      }
+
+      let comando = null;
+
+      switch (palabra) {
+
+        case "yes":
+          comando = "caer";
+          break;
+        // NUEVOS COMANDOS DE CÁMARA
+        case "one":
+          comando = "camara_2d"; // Vista 2D desde arriba
+          break;
+        case "two":
+          comando = "camara_defecto"; // Vista por defecto
+          break;
+        case "three":
+          comando = "camara_vertical"; // Vista vertical
+          break;
+      }
+
+      if (comando === null) {
+        return;
+      }
+
+      const ahora = Date.now();
+      const mismoComandoReciente = comando === ultimoComandoVoz && ahora - ultimoTiempoVoz < COOLDOWN_COMANDO_VOZ;
+      const mismaPalabraReciente = palabra === ultimaPalabraVoz && ahora - ultimoTiempoVoz < COOLDOWN_COMANDO_VOZ;
+
+      if (mismoComandoReciente || mismaPalabraReciente) {
+        return;
+      }
+
+      ultimoComandoVoz = comando;
+      ultimoTiempoVoz = ahora;
+      ultimaPalabraVoz = palabra;
+
+      console.log("🎮 Comando de voz:", comando);
+      ejecutarComandoVoz(comando);
+    }
+
+    function ejecutarComandoVoz(comando) {
+      let keyToSimulate = null;
+
+      switch (comando) {
+        case "caer":
+          keyToSimulate = " ";
+          break;
+        // NUEVAS SIMULACIONES DE TECLADO PARA CÁMARA
+        case "camara_2d":
+          keyToSimulate = "1";
+          break;
+        case "camara_defecto":
+          keyToSimulate = "2";
+          break;
+        case "camara_vertical":
+          keyToSimulate = "3";
+          break;
+      }
+
+      if (keyToSimulate !== null) {
+        console.log(
+          `🎮 Voz: "${comando}" → ${keyToSimulate === " " ? "Space" : keyToSimulate}`
+        );
+
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: keyToSimulate,
+            code: keyToSimulate === " " ? "Space" : `Digit${keyToSimulate}`,
+            bubbles: true
+          })
+        );
+      }
+    }
+
+    async function iniciarMediaPipe() {
+      console.log("Cargando modelo de gestos...");
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+      );
+
+      gestureRecognizer = await GestureRecognizer.createFromOptions(
+        vision,
+        {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numHands: 1
+        }
+      );
+
+      console.log("Modelo de gestos cargado. Encendiendo cámara...");
+      encenderCamara();
+    }
+
+    function encenderCamara() {
+      const video = document.getElementById("webcam");
+
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then(stream => {
+          video.srcObject = stream;
+          video.addEventListener("loadeddata", () => predecirBucle(video));
+        })
+        .catch(err => {
+          console.error("Error al acceder a la cámara:", err);
+        });
+    }
+
+    function predecirBucle(video) {
+      const tiempoActual = performance.now();
+
+      if (video.currentTime !== ultimaVezVideo) {
+        ultimaVezVideo = video.currentTime;
+
+        const resultados = gestureRecognizer.recognizeForVideo(video, tiempoActual);
+
+        if (resultados.gestures.length > 0) {
+          const gestoActual = resultados.gestures[0][0].categoryName;
+
+          if (gestoActual !== ultimoGesto) {
+            console.log("Gesto detectado:", gestoActual);
+            ultimoGesto = gestoActual;
+            ejecutarComandoGesto(gestoActual);
+          }
+        } else {
+          if (ultimoGesto !== "None") {
+            console.log("Gesto detectado: None (Sin mano)");
+            ultimoGesto = "None";
+          }
+        }
+      }
+
+      requestAnimationFrame(() => predecirBucle(video));
+    }
+
+    function ejecutarComandoGesto(gesto) {
+      let keyToSimulate = null;
+
+      switch (gesto) {
+        case "Pointing_Up":
+          keyToSimulate = "x";
+          break;
+        case "Open_Palm":
+          keyToSimulate = "X";
+          break;
+        case "Thumb_Down":
+          keyToSimulate = "y";
+          break;
+        case "Thumb_Up":
+          keyToSimulate = "Y";
+          break;
+        case "Closed_Fist":
+          break;
+        case "Victory":
+          keyToSimulate = "z";
+          break;
+        case "ILoveYou":
+          keyToSimulate = "Z";
+          break;
+      }
+
+      if (keyToSimulate) {
+        console.log(
+          `Gesto: "${gesto}" → ${keyToSimulate === " " ? "Space" : keyToSimulate}`
+        );
+
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: keyToSimulate,
+            code: keyToSimulate === " " ? "Space" : keyToSimulate,
+            bubbles: true
+          })
+        );
+      }
+    }
+
+    iniciarMediaPipe();
+    iniciarReconocimientoVoz();
+
+  </script>
+
+  <script>
+    // Conectarse al flujo de datos del servidor local
+    const origenEventos = new EventSource('/stream');
+
+    origenEventos.onmessage = function (evento) {
+      const mcuData = JSON.parse(evento.data);
+      console.log("🕹️ Giroscopio MCU:", mcuData);
+    };
+
+    origenEventos.onerror = function () {
+      console.error("Desconectado del servidor del MCU. Intentando reconectar...");
+    };
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,290 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Prueba de reconocimiento de voz</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 50px;
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        #estado {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        #resultado {
+            margin-top: 30px;
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        #confianza {
+            margin-top: 10px;
+            font-size: 20px;
+        }
+
+        button {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        #lista {
+            margin: 30px auto;
+            max-width: 700px;
+            text-align: left;
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        #lista p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎤 Prueba de voz</h1>
+
+    <p>
+        Esta página prueba TensorFlow.js directamente en el navegador.
+    </p>
+
+    <button id="iniciar">
+        🎤 Iniciar micrófono
+    </button>
+
+    <div id="estado">
+        Estado: esperando...
+    </div>
+
+    <div id="resultado">
+        —
+    </div>
+
+    <div id="confianza">
+        Confianza: —
+    </div>
+
+    <div id="lista">
+        <h3>Palabras que reconoce el modelo base:</h3>
+        <div id="palabras">
+            Cargando...
+        </div>
+    </div>
+
+
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+    <!-- TensorFlow.js Speech Commands -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
+
+
+    <script>
+
+        let recognizer = null;
+        let escuchando = false;
+
+
+        // --------------------------------------------------
+        // INICIAR RECONOCIMIENTO
+        // --------------------------------------------------
+
+        async function iniciarReconocimiento() {
+
+            const boton = document.getElementById("iniciar");
+            const estado = document.getElementById("estado");
+
+            boton.disabled = true;
+
+            estado.textContent =
+                "Estado: cargando TensorFlow.js...";
+
+            try {
+
+                // Crear reconocedor
+                recognizer = speechCommands.create(
+                    "BROWSER_FFT"
+                );
+
+                // Cargar el modelo
+                await recognizer.ensureModelLoaded();
+
+                console.log(
+                    "TensorFlow.js cargado correctamente."
+                );
+
+                // Obtener las palabras que conoce el modelo
+                const palabras =
+                    recognizer.wordLabels();
+
+                console.log(
+                    "Palabras del modelo:",
+                    palabras
+                );
+
+
+                // Mostrar las palabras en pantalla
+                const lista =
+                    document.getElementById("palabras");
+
+                lista.innerHTML = "";
+
+                palabras.forEach(palabra => {
+
+                    const p =
+                        document.createElement("p");
+
+                    p.textContent = "• " + palabra;
+
+                    lista.appendChild(p);
+
+                });
+
+
+                // --------------------------------------------------
+                // EMPEZAR A ESCUCHAR
+                // --------------------------------------------------
+
+                estado.textContent =
+                    "Estado: 🎤 escuchando...";
+
+                escuchando = true;
+
+
+                recognizer.listen(
+
+                    resultado => {
+
+                        const scores =
+                            resultado.scores;
+
+                        let mejorIndice = 0;
+
+
+                        // Buscar la palabra con mayor probabilidad
+
+                        for (
+                            let i = 1;
+                            i < scores.length;
+                            i++
+                        ) {
+
+                            if (
+                                scores[i] >
+                                scores[mejorIndice]
+                            ) {
+
+                                mejorIndice = i;
+
+                            }
+
+                        }
+
+
+                        const palabra =
+                            palabras[mejorIndice];
+
+                        const confianza =
+                            scores[mejorIndice];
+
+
+                        // Mostrar resultado
+
+                        document.getElementById(
+                            "resultado"
+                        ).textContent =
+                            palabra;
+
+
+                        document.getElementById(
+                            "confianza"
+                        ).textContent =
+                            "Confianza: " +
+                            (confianza * 100).toFixed(1) +
+                            "%";
+
+
+                        console.log(
+                            "Detectado:",
+                            palabra,
+                            "Confianza:",
+                            confianza
+                        );
+
+                    },
+
+                    {
+
+                        // No necesitamos el espectrograma
+                        includeSpectrogram: false,
+
+                        // Solo consideramos resultados
+                        // con suficiente confianza
+                        probabilityThreshold: 0.60,
+
+                        // Permite recibir ruido/desconocido
+                        invokeCallbackOnNoiseAndUnknown: true
+
+                    }
+
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Error:",
+                    error
+                );
+
+                estado.textContent =
+                    "❌ Error al iniciar el reconocimiento.";
+
+                boton.disabled = false;
+
+            }
+
+        }
+
+
+        // --------------------------------------------------
+        // BOTÓN
+        // --------------------------------------------------
+
+        document
+            .getElementById("iniciar")
+            .addEventListener(
+                "click",
+                iniciarReconocimiento
+            );
+
+    </script>
+
+</body>
+</html>
+```
