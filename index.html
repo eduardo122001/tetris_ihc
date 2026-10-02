@@ -331,16 +331,59 @@
 
   </script>
 
-  <script>
-    // Conectarse al flujo de datos del servidor local
-    const origenEventos = new EventSource('/stream');
 
-    origenEventos.onmessage = function (evento) {
+<script>
+  let posicionCabeza = "centro";
+    
+    const UMBRAL_INCLINACION = 0.35; // Superar este valor dispara el movimiento
+    const UMBRAL_CENTRO = 0.15;      // Bajar de este valor resetea al centro (zona muerta)
+
+    function simularTeclaTetris(tecla) {
+      console.log("🕹️ Sensor activó:", tecla);
+      document.dispatchEvent(new KeyboardEvent("keydown", {
+        key: tecla,
+        code: (tecla === " ") ? "Space" : tecla,
+        bubbles: true
+      }));
+    }
+
+    const origenEventos = new EventSource('/stream');
+    origenEventos.onmessage = function(evento) {
       const mcuData = JSON.parse(evento.data);
-      console.log("🕹️ Giroscopio MCU:", mcuData);
+      console.log("Giroscopio MCU:", mcuData);
+      /* 
+        Logica del juego para despuesc
+        Ejemplo: 
+        if (mcuData.gyroX > 2.0) { ejecutarComandoGesto("Thumb_Up"); } 
+      */
+      const x = mcuData.x; 
+      const y = mcuData.y;
+      if (x > UMBRAL_INCLINACION && posicionCabeza !== "derecha") {
+        simularTeclaTetris("ArrowRight");
+        posicionCabeza = "derecha";
+      } 
+      else if (x < -UMBRAL_INCLINACION && posicionCabeza !== "izquierda") {
+        simularTeclaTetris("ArrowLeft");
+        posicionCabeza = "izquierda";
+      } 
+      
+      // 2. Detección de inclinación frontal (Eje Y) -> Bajar / Rotar
+      else if (y > UMBRAL_INCLINACION && posicionCabeza !== "abajo") {
+        simularTeclaTetris("ArrowDown"); 
+        posicionCabeza = "abajo";
+      } 
+      else if (y < -UMBRAL_INCLINACION && posicionCabeza !== "arriba") {
+        simularTeclaTetris("ArrowUp"); // En Tetris suele ser rotar
+        posicionCabeza = "arriba";
+      } 
+      
+      // 3. Retorno al centro (Zona muerta) -> Permite un nuevo movimiento
+      else if (Math.abs(x) < UMBRAL_CENTRO && Math.abs(y) < UMBRAL_CENTRO) {
+        posicionCabeza = "centro";
+      }
     };
 
-    origenEventos.onerror = function () {
+    origenEventos.onerror = function() {
       console.error("Desconectado del servidor del MCU. Intentando reconectar...");
     };
   </script>
