@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d18">
+  <title>Mando de giroscopio · 3D Tetris</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #080d18;
+      color: #e5edf8;
+      --panel: #0e1728;
+      --line: #1d2b40;
+      --muted: #91a0b8;
+      --cyan: #20d5eb;
+      --green: #31d6a0;
+    }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 20px; }
+    main { width: min(100%, 620px); }
+    p { color: var(--muted); line-height: 1.5; }
+    h1 { margin: 0; font-size: 25px; }
+    .kicker { margin: 0 0 8px; color: var(--cyan); font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+    .topbar, .eventbar, .sensor-panel { border: 1px solid var(--line); background: var(--panel); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; border-radius: 20px; }
+    .heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .signal { width: 12px; height: 12px; flex: 0 0 auto; border-radius: 50%; background: #445168; }
+    .signal[data-active="true"] { background: var(--green); box-shadow: 0 0 16px #31d6a077; }
+    .heading p { margin: 4px 0 0; font-size: 13px; }
+    .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+    button { min-height: 44px; padding: 0 15px; border: 0; border-radius: 14px; background: var(--cyan); color: #06131b; font: inherit; font-weight: 750; cursor: pointer; }
+    button:disabled { opacity: .45; cursor: default; }
+    #stopSensor { border: 1px solid #46566d; background: transparent; color: #e5edf8; }
+    #sensorStatus { margin: 10px 0; padding: 10px 13px; border: 1px solid var(--line); border-radius: 14px; background: #080d18; font-size: 13px; }
+    .eventbar { display: flex; justify-content: space-between; gap: 12px; margin: 12px 0 16px; padding: 12px 14px; border-radius: 15px; font-size: 13px; }
+    .eventbar strong { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .sensor-panel { padding: clamp(16px, 5vw, 34px); border-radius: 28px; }
+    .posture { display: grid; min-height: 70px; place-items: center; border: 1px solid var(--line); border-radius: 22px; background: #101a2c; color: var(--muted); font-size: clamp(18px, 5vw, 25px); font-weight: 800; letter-spacing: 1px; }
+    .radar { position: relative; width: min(100%, 370px); aspect-ratio: 1; margin: 22px auto; overflow: hidden; border: 2px solid #08748a; border-radius: 50%; background: radial-gradient(circle, #081020 0 31%, transparent 31.5%), radial-gradient(circle, transparent 0 49%, #1b2a40 49.5% 50%, transparent 50.5%), radial-gradient(circle, transparent 0 72%, #1b2a40 72.5% 73%, transparent 73.5%), #080e1d; }
+    .radar::before, .radar::after { position: absolute; content: ""; background: #1d2b40; }
+    .radar::before { top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; }
+    .radar::after { top: calc(50% - 1px); right: 0; left: 0; height: 2px; }
+    .direction { position: absolute; z-index: 1; color: #71819a; font-size: 11px; }
+    .direction.up { top: 5%; left: 50%; transform: translateX(-50%); }
+    .direction.down { bottom: 5%; left: 50%; transform: translateX(-50%); }
+    .direction.left { top: 50%; left: 4%; transform: translateY(-50%); }
+    .direction.right { top: 50%; right: 4%; transform: translateY(-50%); }
+    .radar-dot { position: absolute; z-index: 2; top: 50%; left: 50%; width: 30px; aspect-ratio: 1; border: 5px solid #dbe7f5; border-radius: 50%; background: #081020; box-shadow: 0 0 22px #20d5eb77; transform: translate(calc(-50% + var(--x, 0px)), calc(-50% + var(--y, 0px))); transition: transform 90ms linear; }
+    .readings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+    .readings div { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 17px; background: #101a2c; text-align: center; }
+    dt { color: var(--muted); font-size: 12px; }
+    dd { margin: 6px 0 0; color: var(--cyan); font-size: clamp(20px, 6vw, 29px); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .readings div:nth-child(2) dd { color: var(--green); }
+    .hint { margin: 14px 2px 0; font-size: 12px; }
+    @media (max-width: 460px) {
+      body { padding: 12px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .actions { width: 100%; justify-content: stretch; }
+      .actions button { flex: 1; }
+      .sensor-panel { padding: 15px; border-radius: 22px; }
+      .radar { margin: 18px auto; }
+      .readings { gap: 7px; }
+      .readings div { padding: 10px 4px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">3D TETRIS / MANDO</p>
+    <section class="topbar" aria-label="Estado del mando">
+      <div class="heading">
+        <span id="connectionSignal" class="signal" aria-hidden="true"></span>
+        <div><h1>Giroscopio conectado</h1><p id="connectionLabel">Esperando sensor</p></div>
+      </div>
+      <div class="actions">
+        <button id="calibrateSensor" type="button" disabled aria-label="Calibrar centro">◎ Calibrar centro</button>
+        <button id="startSensor" type="button">Iniciar sensor</button>
+        <button id="stopSensor" type="button" disabled>Detener</button>
+      </div>
+    </section>
+    <div class="eventbar" aria-live="polite">
+      <span>Eventos de giroscopio</span><strong><span id="eventCount">0</span> recibidos</strong>
+    </div>
+    <p id="sensorStatus" role="status">Sensor detenido.</p>
+    <section class="sensor-panel" aria-label="Visualización del giroscopio">
+      <div id="posture" class="posture" aria-live="polite">POSTURA NEUTRA</div>
+      <div id="radar" class="radar" role="img" aria-label="Indicador de inclinación">
+        <span class="direction up">ARRIBA</span><span class="direction down">ABAJO</span>
+        <span class="direction left">IZQ</span><span class="direction right">DER</span>
+        <span id="radarDot" class="radar-dot"></span>
+      </div>
+      <dl class="readings" aria-label="Lecturas relativas a la calibración">
+        <div><dt>X · Inclinación</dt><dd id="axisX">--°</dd></div>
+        <div><dt>Y · Cabeceo</dt><dd id="axisY">--°</dd></div>
+        <div><dt>Z · Orientación</dt><dd id="axisZ">--°</dd></div>
+      </dl>
+    </section>
+    <p class="hint">Si el navegador no permite el sensor por HTTP, abre esta página mediante una dirección HTTPS segura.</p>
+  </main>
+  <script>
+    const startButton = document.querySelector("#startSensor");
+    const stopButton = document.querySelector("#stopSensor");
+    const status = document.querySelector("#sensorStatus");
+    let sensorActive = false;
+    let firstReadingTimer = null;
+    let lastSentAt = 0;
+    let sensorEventNames = [];
+    let latestRawReading = null;
+    let calibrationCenter = null;
+    let filteredValues = null;
+    let eventCount = 0;
+    const FILTER_FACTOR = 0.18;
+    const ANGLE_DEAD_ZONE = 1.2;
+
+    const normalizeAngle = angle => ((angle + 180) % 360 + 360) % 360 - 180;
+
+    const updateDisplay = reading => {
+      const targetValues = Object.fromEntries(["x", "y", "z"].map(axis => {
+        const offset = calibrationCenter ? calibrationCenter[axis] : reading[axis];
+        return [axis, normalizeAngle(reading[axis] - offset)];
+      }));
+      filteredValues ??= { ...targetValues };
+      const values = Object.fromEntries(["x", "y", "z"].map(axis => {
+        const difference = normalizeAngle(targetValues[axis] - filteredValues[axis]);
+        let value = normalizeAngle(filteredValues[axis] + difference * FILTER_FACTOR);
+        if (Math.abs(value) < ANGLE_DEAD_ZONE) value = 0;
+        return [axis, value];
+      }));
+      filteredValues = values;
+      const radar = document.querySelector("#radar");
+      const radius = radar.clientWidth * 0.38;
+      const horizontal = Math.max(-1, Math.min(1, values.y / 35)) * radius;
+      const vertical = -Math.max(-1, Math.min(1, values.x / 35)) * radius;
+      document.querySelector("#radarDot").style.setProperty("--x", `${horizontal}px`);
+      document.querySelector("#radarDot").style.setProperty("--y", `${vertical}px`);
+      for (const axis of ["x", "y", "z"]) {
+        document.querySelector(`#axis${axis.toUpperCase()}`).textContent = `${values[axis].toFixed(1)}°`;
+      }
+      const tilted = Math.abs(values.x) > 5 || Math.abs(values.y) > 5;
+      document.querySelector("#posture").textContent = tilted ? "INCLINACIÓN DETECTADA" : "POSTURA NEUTRA";
+      return values;
+    };
+
+    const reportError = error => {
+      status.textContent = error.message || "No se pudo iniciar el sensor.";
+      stopSensor();
+    };
+
+    const sendSensorReading = async event => {
+      const gyro = { x: event.beta, y: event.gamma, z: event.alpha ?? 0 };
+      if (!Number.isFinite(gyro.x) || !Number.isFinite(gyro.y)) return;
+      window.clearTimeout(firstReadingTimer);
+      latestRawReading = {
+        x: gyro.x,
+        y: gyro.y,
+        z: Number.isFinite(gyro.z) ? gyro.z : 0
+      };
+      if (!calibrationCenter) {
+        calibrationCenter = { x: latestRawReading.x, y: latestRawReading.y, z: latestRawReading.z };
+      }
+      const values = updateDisplay(latestRawReading);
+      eventCount++;
+      document.querySelector("#eventCount").textContent = eventCount;
+      document.querySelector("#connectionSignal").dataset.active = "true";
+      document.querySelector("#connectionLabel").textContent = "Enlace activo · leyendo movimiento";
+      document.querySelector("#calibrateSensor").disabled = false;
+      const now = Date.now();
+      if (now - lastSentAt < 50) return;
+      lastSentAt = now;
+
+      try {
+        const response = await fetch("/datos?source=mobile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gyro: values })
+        });
+        if (!response.ok) throw new Error(`Flask respondió con error ${response.status}.`);
+        status.textContent = "Sensor activo. Lecturas enviadas al ordenador.";
+      } catch (error) {
+        status.textContent = "No se pudo enviar al servidor. Comprueba la conexión con Flask.";
+        console.error(error);
+      }
+    };
+
+    document.querySelector("#calibrateSensor").addEventListener("click", () => {
+      if (!latestRawReading) return;
+      calibrationCenter = { x: latestRawReading.x, y: latestRawReading.y, z: latestRawReading.z };
+      filteredValues = { x: 0, y: 0, z: 0 };
+      updateDisplay(latestRawReading);
+      status.textContent = "Centro calibrado. Mantén el móvil en esta postura neutral.";
+    });
+
+    const stopSensor = () => {
+      if (sensorActive) sensorEventNames.forEach(name => window.removeEventListener(name, sendSensorReading));
+      window.clearTimeout(firstReadingTimer);
+      firstReadingTimer = null;
+      sensorEventNames = [];
+      sensorActive = false;
+      startButton.disabled = false;
+      stopButton.disabled = true;
+    };
+
+    startButton.addEventListener("click", async () => {
+      try {
+        const SensorApi = window.DeviceOrientationEvent;
+        if (!SensorApi) {
+          const hint = !window.isSecureContext && location.hostname !== "localhost"
+            ? " Abre la página con HTTPS: el navegador bloquea sensores en HTTP."
+            : " Prueba un navegador actualizado en un teléfono con orientación del dispositivo.";
+          throw new Error(`Este navegador no ofrece orientación del dispositivo.${hint}`);
+        }
+        if (typeof SensorApi.requestPermission === "function") {
+          const permission = await SensorApi.requestPermission();
+          if (permission !== "granted") {
+          throw new Error("Permiso del sensor denegado. Autoriza movimiento/orientación en el navegador y vuelve a intentarlo.");
+          }
+        }
+        sensorEventNames = ["deviceorientation"];
+        sensorActive = true;
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        status.textContent = "Esperando lecturas del giroscopio...";
+        sensorEventNames.forEach(name => window.addEventListener(name, sendSensorReading));
+        firstReadingTimer = window.setTimeout(() => {
+          status.textContent = !window.isSecureContext && location.hostname !== "localhost"
+            ? "No llegan lecturas. Este navegador requiere HTTPS para usar el sensor."
+            : "No llegan lecturas. Revisa el permiso del sensor y que el teléfono tenga giroscopio.";
+          stopSensor();
+        }, 5000);
+      } catch (error) {
+        reportError(error);
+      }
+    });
+
+    stopButton.addEventListener("click", () => {
+      stopSensor();
+      document.querySelector("#calibrateSensor").disabled = true;
+      document.querySelector("#connectionSignal").dataset.active = "false";
+      document.querySelector("#connectionLabel").textContent = "Sensor detenido";
+      status.textContent = "Sensor detenido.";
+    });
+  </script>
+</body>
+</html>

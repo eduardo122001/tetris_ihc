@@ -237,14 +237,29 @@ const main = async () => {
 
     vaoManager.initializeVAOs(gl, sBaseGS);
 
+    window.tetrisGamePrepared = true;
+    window.dispatchEvent(new Event('tetris-game-prepared'));
+    if (!window.tetrisSensorsReady) {
+        await new Promise(resolve => window.addEventListener('tetris-sensors-ready', resolve, { once: true }));
+    }
+
     /* --------- Start game --------- */
 
     gameLogic.startGame(objects);
+    if (window.tetrisTutorialMode) {
+        gameLogic.isGamePaused = true;
+        window.addEventListener('tetris-tutorial-finished', () => {
+            gameLogic.isGamePaused = false;
+            gameLogic.last = performance.now() - gameLogic.deltaTime;
+        }, { once: true });
+    }
+    window.tetrisGameStarted = true;
 
     /* --------- Register keyboard and mouse events --------- */
 
     keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager);
     mouseInteraction.registerEvents(canvas, camera);
+    window.dispatchEvent(new Event('tetris-started'));
 
     playBackgroundMusic();
 
