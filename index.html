@@ -49,7 +49,7 @@
       <div class="menu-guide">
         <img class="capibara-image" src="capibara.jpg" alt="Capibara astronauta" />
         <div class="menu-speech-bubble">
-          <p id="menuVoicePrompt" class="menu-voice-prompt">Muestra ante la cámara el gesto de victoria y di “one” para jugar o “two” para ver el tutorial.</p>
+          <p id="menuVoicePrompt" class="menu-voice-prompt">Acerca el micrófono a tu boca, muestra el gesto de victoria y di “one” para jugar o “two” para ver el tutorial.</p>
           <img class="victory-image" src="victoria.png" alt="Gesto Victory: dos dedos en V" />
         </div>
       </div>
@@ -58,6 +58,22 @@
         <button id="playMenuButton" type="button"><kbd>ONE</kbd><span>Jugar</span></button>
         <button id="tutorialMenuButton" type="button"><kbd>TWO</kbd><span>Ver tutorial</span></button>
       </div>
+    </div>
+  </section>
+
+  <section id="gameOverScreen" class="game-over-screen" aria-labelledby="gameOverTitle" aria-modal="true" role="dialog" hidden>
+    <div class="game-over-panel">
+      <p class="menu-kicker">3D TETRIS / FIN DE PARTIDA</p>
+      <h1 id="gameOverTitle">¡Perdiste!</h1>
+      <div class="menu-guide">
+        <img class="capibara-image" src="capibara.jpg" alt="Capibara astronauta" />
+        <div class="menu-speech-bubble">
+          <p class="menu-voice-prompt">Acerca el micrófono a tu boca, muestra el gesto de victoria y di “zero” para jugar de nuevo.</p>
+          <img class="victory-image" src="victoria.png" alt="Gesto Victory: dos dedos en V" />
+        </div>
+      </div>
+      <p id="gameOverVoiceStatus" class="menu-voice-status" role="status">Muestra el gesto de victoria para activar el micrófono.</p>
+      <button id="gameOverRestartButton" type="button">Jugar de nuevo</button>
     </div>
   </section>
 
@@ -84,20 +100,19 @@
       </section>
 
       <section class="gesture-guide retro-panel" aria-label="Guía de gestos">
-        <h3>RECONOCEDOR DE GESTOS</h3>
+        <h3>GESTOS / ROTACIÓN Y VOZ</h3>
         <ul class="gesture-cards">
           <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Apuntando</span></li>
           <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Palma</span></li>
           <li data-gesture-card="Thumb_Down"><img src="pulgarAbajo.png" alt=""><span>Pulgar abajo</span></li>
           <li data-gesture-card="Thumb_Up"><img src="pulgarArriba.png" alt=""><span>Pulgar arriba</span></li>
-          <li data-gesture-card="Closed_Fist"><img src="manoCerrada.png" alt=""><span>Mano cerrada</span></li>
           <li data-gesture-card="Victory"><img src="victoria.png" alt="Gesto de victoria"><span>Victoria / Voz</span></li>
         </ul>
       </section>
 
       <section class="sensor-connection retro-panel" aria-label="Conexión de sensores">
         <h3>VOZ / GIROSCOPIO</h3>
-        <p id="voiceCommandStatus" role="status">Haz el gesto de la paz para activar el micrófono y decir palabras.</p>
+        <p id="voiceCommandStatus" role="status">Acerca el micrófono a tu boca y haz el gesto de la paz para activar la voz.</p>
         <label for="gyroSource">Giroscopio:</label>
         <select id="gyroSource">
           <option value="esp">ESP (opción principal)</option>
@@ -166,7 +181,15 @@
     let ultimoTiempoVoz = 0;
     let ultimaPalabraVoz = "";
 
-    const UMBRAL_VOZ = 0.9;
+    const UMBRAL_VOZ = 0.95;
+    const RESTRICCIONES_MICROFONO = {
+      audioTrackConstraints: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false
+      }
+    };
     const COOLDOWN_COMANDO_VOZ = 700;
     const ESP_FALLBACK_TIMEOUT_MS = 5000;
     const loadingMessage = document.querySelector("#loadingMessage");
@@ -175,6 +198,7 @@
     let rejectFirstGestureFrame;
     let menuVoiceCooldownAt = 0;
     let tensorflowSupportsMenuWords = false;
+    let tensorflowSupportsGameOverWord = false;
     let menuSpeechRecognition = null;
     const voiceCommandStatus = document.querySelector("#voiceCommandStatus");
 
@@ -200,6 +224,7 @@
         throw new Error('El modelo de voz no incluye la palabra "yes".');
       }
       tensorflowSupportsMenuWords = ["one", "two"].every(word => palabras.includes(word));
+      tensorflowSupportsGameOverWord = palabras.includes("zero");
       console.log("Modelo de voz listo. El micrófono espera el gesto Victory.");
     }
 
@@ -224,6 +249,14 @@
       );
 
       const gameMenu = document.querySelector("#gameMenu");
+      const gameOverScreen = document.querySelector("#gameOverScreen");
+      if (!gameOverScreen.hidden) {
+        if (confianza >= UMBRAL_VOZ && palabra === "zero") {
+          window.dispatchEvent(new Event("tetris-restart-game"));
+        }
+        return;
+      }
+
       if (!gameMenu.hidden && confianza >= UMBRAL_VOZ) {
         if (!voiceGestureActive) return;
         const now = Date.now();
@@ -298,14 +331,21 @@
 
     function actualizarMicrofonoPorGesto(activar) {
       const gameMenu = document.querySelector("#gameMenu");
-      voiceGestureActive = activar && (!gameMenu.hidden || window.tetrisGameStarted);
+      const gameOverScreen = document.querySelector("#gameOverScreen");
+      voiceGestureActive = activar && (!gameMenu.hidden || !gameOverScreen.hidden || window.tetrisGameStarted);
       voiceCommandStatus.textContent = activar
-        ? "Gesto de la paz activo: escuchando palabras."
-        : "Haz el gesto de la paz para activar el micrófono y decir palabras.";
+        ? "Gesto de la paz activo: habla cerca del micrófono."
+        : "Acerca el micrófono a tu boca y haz el gesto de la paz para activar la voz.";
       const menuVoiceStatus = document.querySelector("#menuVoiceStatus");
       if (!gameMenu.hidden) {
         menuVoiceStatus.textContent = voiceGestureActive
           ? "Gesto de victoria activo: di “one” o “two”."
+          : "Muestra el gesto de victoria para activar el micrófono.";
+      }
+      const gameOverVoiceStatus = document.querySelector("#gameOverVoiceStatus");
+      if (!gameOverScreen.hidden) {
+        gameOverVoiceStatus.textContent = voiceGestureActive
+          ? "Gesto de victoria activo: di “zero” para jugar de nuevo."
           : "Muestra el gesto de victoria para activar el micrófono.";
       }
 
@@ -321,8 +361,13 @@
           return;
         }
 
-        if (!gameMenu.hidden && !tensorflowSupportsMenuWords) {
-          startMenuVoiceRecognition();
+        if ((!gameMenu.hidden && !tensorflowSupportsMenuWords) ||
+            (!gameOverScreen.hidden && !tensorflowSupportsGameOverWord)) {
+          if (voiceRecognizer?.isListening()) {
+            await voiceRecognizer.stopListening();
+            vozActiva = false;
+          }
+          startFallbackVoiceRecognition();
           return;
         }
 
@@ -333,7 +378,9 @@
             {
               includeSpectrogram: false,
               probabilityThreshold: UMBRAL_VOZ,
-              invokeCallbackOnNoiseAndUnknown: true
+              invokeCallbackOnNoiseAndUnknown: true,
+              suppressionTimeMillis: 900,
+              ...RESTRICCIONES_MICROFONO
             }
           );
           vozActiva = true;
@@ -509,15 +556,6 @@
         case "Thumb_Up":
           keyToSimulate = "Y";
           break;
-        case "Closed_Fist":
-          if (tutorialMode === "gesture") keyToSimulate = "x";
-          break;
-        case "Victory":
-          keyToSimulate = "z";
-          break;
-        case "ILoveYou":
-          keyToSimulate = "Z";
-          break;
       }
 
       if (keyToSimulate) {
@@ -569,18 +607,16 @@
       { key: "ArrowDown", title: "Inclina hacia abajo", prompt: "Inclina el giroscopio hacia abajo una vez. Después vuelve al centro." }
     ];
     const gestureTutorialSteps = [
-      { name: "Pointing_Up", prompt: "Haz el gesto Pointing Up (índice hacia arriba)." },
-      { name: "Open_Palm", prompt: "Muestra la palma abierta (Open Palm)." },
-      { name: "Thumb_Down", prompt: "Haz pulgar hacia abajo (Thumb Down)." },
-      { name: "Thumb_Up", prompt: "Haz pulgar hacia arriba (Thumb Up)." },
-      { name: "Closed_Fist", prompt: "Cierra la mano (Closed Fist). No tiene acción durante la partida; aquí la pieza gira como demostración." },
-      { name: "Victory", prompt: "Haz el gesto Victory (dos dedos en V)." },
-      { name: "ILoveYou", prompt: "Haz el gesto I Love You." }
+      { name: "Pointing_Up", prompt: "Apunta el índice hacia arriba para girar la pieza +90° sobre el eje X." },
+      { name: "Open_Palm", prompt: "Muestra la palma abierta para girar la pieza −90° sobre el eje X." },
+      { name: "Thumb_Down", prompt: "Muestra el pulgar hacia abajo para girar la pieza +90° sobre el eje Y." },
+      { name: "Thumb_Up", prompt: "Muestra el pulgar hacia arriba para girar la pieza −90° sobre el eje Y." },
+      { name: "Victory", prompt: "Haz Victory (dos dedos en V) para activar el micrófono. No gira la pieza." }
     ];
     const voiceTutorialSteps = [
       { word: "one", prompt: "Di “one” para cambiar a la vista 2D." },
-      { word: "two", prompt: "Di “two” para volver a la vista por defecto." },
-      { word: "three", prompt: "Di “three” para cambiar a la vista vertical." }
+      { word: "three", prompt: "Di “three” para cambiar a la vista vertical." },
+      { word: "two", prompt: "Di “two” para volver a la vista por defecto." }
     ];
     const tutorialTotalSteps = gyroTutorialSteps.length + gestureTutorialSteps.length + voiceTutorialSteps.length;
 
@@ -602,14 +638,22 @@
       if (ultimoGesto === "Victory") actualizarMicrofonoPorGesto(true);
     }
 
-    function startMenuVoiceRecognition() {
-      const status = document.querySelector("#menuVoiceStatus");
-      if (!voiceGestureActive || document.querySelector("#gameMenu").hidden || tensorflowSupportsMenuWords) return;
+    function startFallbackVoiceRecognition() {
+      const gameOverScreen = document.querySelector("#gameOverScreen");
+      const gameMenu = document.querySelector("#gameMenu");
+      const gameOverVisible = !gameOverScreen.hidden;
+      const menuVisible = !gameMenu.hidden;
+      const status = document.querySelector(gameOverVisible ? "#gameOverVoiceStatus" : "#menuVoiceStatus");
+      if (!voiceGestureActive || (!menuVisible && !gameOverVisible) ||
+          (menuVisible && tensorflowSupportsMenuWords) ||
+          (gameOverVisible && tensorflowSupportsGameOverWord)) return;
       if (menuSpeechRecognition) return;
 
       const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!Recognition) {
-        status.textContent = "Este modelo no reconoce “one/two” y el navegador no ofrece reconocimiento de voz. Usa los botones.";
+        status.textContent = gameOverVisible
+          ? "Este modelo no reconoce “zero” y el navegador no ofrece reconocimiento de voz. Usa el botón."
+          : "Este modelo no reconoce “one/two” y el navegador no ofrece reconocimiento de voz. Usa los botones.";
         return;
       }
 
@@ -619,44 +663,58 @@
       recognition.interimResults = false;
       menuSpeechRecognition = recognition;
       recognition.onresult = event => {
-        if (!voiceGestureActive || gameMenu.hidden) return;
+        if (!voiceGestureActive || (gameMenu.hidden && gameOverScreen.hidden)) return;
         for (let index = event.resultIndex; index < event.results.length; index++) {
           if (!event.results[index].isFinal) continue;
-          const transcript = event.results[index][0].transcript.trim().toLowerCase();
-          if (/\bone\b/.test(transcript)) {
+          const alternative = event.results[index][0];
+          if (alternative.confidence < UMBRAL_VOZ) continue;
+          const transcript = alternative.transcript.trim().toLowerCase();
+          if (!gameOverScreen.hidden && /\bzero\b/.test(transcript)) {
+            window.dispatchEvent(new Event("tetris-restart-game"));
+            return;
+          }
+          if (gameOverScreen.hidden && /\bone\b/.test(transcript)) {
             selectMenuOption("play");
             return;
           }
-          if (/\btwo\b/.test(transcript)) {
+          if (gameOverScreen.hidden && /\btwo\b/.test(transcript)) {
             selectMenuOption("tutorial");
             return;
           }
         }
       };
       recognition.onerror = event => {
-        console.warn("El reconocimiento de voz del menú no está disponible:", event.error);
-        status.textContent = "No se pudo reconocer la voz. Usa los botones para elegir.";
+        console.warn("El reconocimiento de voz no está disponible:", event.error);
+        status.textContent = gameOverVisible
+          ? "No se pudo reconocer la voz. Usa el botón para volver a jugar."
+          : "No se pudo reconocer la voz. Usa los botones para elegir.";
       };
       recognition.onend = () => {
-        if (gameMenu.hidden || !voiceGestureActive || menuSpeechRecognition !== recognition) return;
+        if ((gameMenu.hidden && gameOverScreen.hidden) || !voiceGestureActive || menuSpeechRecognition !== recognition) return;
         window.setTimeout(() => {
-          if (gameMenu.hidden || !voiceGestureActive || menuSpeechRecognition !== recognition) return;
+          if ((gameMenu.hidden && gameOverScreen.hidden) || !voiceGestureActive || menuSpeechRecognition !== recognition) return;
           try {
             recognition.start();
           } catch (error) {
             console.warn("No se pudo reanudar el reconocimiento de voz del menú:", error);
-            status.textContent = "El reconocimiento de voz se detuvo. Usa los botones para elegir.";
+            status.textContent = gameOverVisible
+              ? "El reconocimiento de voz se detuvo. Usa el botón para volver a jugar."
+              : "El reconocimiento de voz se detuvo. Usa los botones para elegir.";
           }
         }, 250);
       };
 
       try {
         recognition.start();
-        status.textContent = "Di “one” para jugar o “two” para ver el tutorial.";
+        status.textContent = gameOverVisible
+          ? "Di “zero” para jugar de nuevo."
+          : "Di “one” para jugar o “two” para ver el tutorial.";
       } catch (error) {
         menuSpeechRecognition = null;
         console.warn("No se pudo iniciar el reconocimiento de voz del menú:", error);
-        status.textContent = "No se pudo iniciar el reconocimiento de voz. Usa los botones para elegir.";
+        status.textContent = gameOverVisible
+          ? "No se pudo iniciar el reconocimiento de voz. Usa el botón para volver a jugar."
+          : "No se pudo iniciar el reconocimiento de voz. Usa los botones para elegir.";
       }
     }
 
@@ -696,6 +754,7 @@
         window.dispatchEvent(new Event("tetris-sensors-ready"));
         return;
       }
+      window.tetrisFreshStartRequested = true;
       window.tetrisTutorialMode = false;
       launchGame();
     }
@@ -733,7 +792,7 @@
         tutorialStep = 0;
       } else if (tutorialMode === "voice" && tutorialStep === voiceTutorialSteps.length) {
         tutorialTitle.textContent = "¡Tutorial terminado!";
-        tutorialStepText.textContent = "Ya probaste el giroscopio, los gestos y los tres comandos de cámara. La partida comienza ahora.";
+        tutorialStepText.textContent = "Ya probaste el giroscopio, los cuatro gestos de rotación, Victory para activar el micrófono y los tres comandos de cámara. La partida comienza ahora.";
         tutorialProgress.textContent = "";
         tutorialMode = "complete";
         window.setTimeout(launchGame, 1400);
@@ -761,9 +820,9 @@
         tutorialProgress.textContent = `Detecté ${gesture}. Ahora prueba: ${expected.name}.`;
         return;
       }
-      tutorialProgress.textContent = gesture === "Closed_Fist"
-        ? "¡Gesto detectado! La pieza giró como demostración; el puño no tiene acción asignada en la partida."
-        : `¡${gesture} detectado! Observa cómo responde la pieza.`;
+      tutorialProgress.textContent = gesture === "Victory"
+        ? "¡Gesto detectado! Victory activa el micrófono; la pieza no gira."
+        : `¡${gesture} detectado! La pieza giró.`;
       advanceTutorialStep();
     }
 
@@ -893,6 +952,12 @@
       gamePrepared = true;
       startGameWhenReady();
     });
+    window.addEventListener("tetris-game-over", () => {
+      actualizarMicrofonoPorGesto(ultimoGesto === "Victory");
+    });
+    window.addEventListener("tetris-game-restarted", () => {
+      actualizarMicrofonoPorGesto(false);
+    });
     window.addEventListener("tetris-started", () => {
       if (ultimoGesto === "Victory") actualizarMicrofonoPorGesto(true);
       if (tutorialMode === "gyro") {
@@ -952,8 +1017,8 @@
         const movementThreshold = 0.35;
         const centerThreshold = 0.15;
         let direction = null;
-        if (x > movementThreshold && currentDirection !== "ArrowRight") direction = "ArrowRight";
-        else if (x < -movementThreshold && currentDirection !== "ArrowLeft") direction = "ArrowLeft";
+        if (x > movementThreshold && currentDirection !== "ArrowRight") direction = "ArrowLeft";
+        else if (x < -movementThreshold && currentDirection !== "ArrowLeft") direction = "ArrowRight";
         else if (y > movementThreshold && currentDirection !== "ArrowDown") direction = "ArrowDown";
         else if (y < -movementThreshold && currentDirection !== "ArrowUp") direction = "ArrowUp";
         else if (Math.abs(x) < centerThreshold && Math.abs(y) < centerThreshold) currentDirection = null;

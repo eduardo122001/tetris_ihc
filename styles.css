@@ -129,6 +129,16 @@ body {
     image-rendering: pixelated;
 }
 
+.gesture-card-label {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    color: inherit;
+    font-size: 9px;
+    font-weight: 700;
+}
+
 .gesture-cards li[data-active="true"] {
     border-color: #fff;
     background: #fff;
@@ -242,6 +252,63 @@ body {
     font-family: "Courier New", monospace;
 }
 
+.game-over-screen {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: #000c;
+    color: #fff;
+    font-family: "Courier New", monospace;
+}
+
+.game-over-screen[hidden] {
+    display: none;
+}
+
+.game-over-panel {
+    box-sizing: border-box;
+    width: min(100%, 540px);
+    padding: clamp(24px, 6vw, 42px);
+    border: 2px solid #fff;
+    background: #08090af2;
+    box-shadow: 8px 8px 0 #ffffff25;
+    text-align: center;
+}
+
+.game-over-panel .menu-kicker {
+    margin-bottom: 14px;
+    color: #a9a9a9;
+}
+
+.game-over-panel h1 {
+    margin: 0;
+    font-size: clamp(36px, 8vw, 56px);
+}
+
+.game-over-panel .menu-voice-prompt {
+    font-size: clamp(16px, 3vw, 19px);
+}
+
+.game-over-panel .menu-voice-status {
+    margin: 12px 0 18px;
+    font-size: 14px;
+}
+
+.game-over-panel button {
+    min-height: 52px;
+    padding: 10px 20px;
+    border: 2px solid #fff;
+    background: #fff;
+    color: #08090a;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 750;
+    cursor: pointer;
+}
+
 .tutorial-screen {
     display: block;
     min-width: 0;
@@ -288,7 +355,7 @@ body {
 .tutorial-panel .menu-kicker {
     margin: 0 0 8px;
     color: #aaa;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .menu-kicker {
@@ -431,17 +498,18 @@ body {
 
 .tutorial-step-text {
     min-height: 0;
-    margin: 8px 0;
+    margin: 12px 0;
     color: #eee;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: clamp(20px, 2vw, 24px);
+    line-height: 1.55;
 }
 
 .tutorial-progress {
     min-height: 0;
-    margin: 6px 0 10px;
+    margin: 8px 0 14px;
     color: #b8ffb8;
-    font-size: 11px;
+    font-size: 17px;
+    line-height: 1.45;
 }
 
 .tutorial-actions {
@@ -452,8 +520,8 @@ body {
 }
 
 .tutorial-actions button {
-    min-height: 40px;
-    font-size: 15px;
+    min-height: 46px;
+    font-size: 18px;
 }
 
 .tutorial-actions .tutorial-skip {
@@ -701,7 +769,7 @@ body {
 }
 
 .tutorial-panel h1 {
-    font-size: clamp(18px, 2vw, 25px);
+    font-size: clamp(26px, 3vw, 36px);
 }
 
 @media (max-width: 760px) {

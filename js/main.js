@@ -296,6 +296,7 @@ const main = async () => {
 
     /* --------- Draw --------- */
 
+    let gameOverNotified = false;
     const draw = () => {
         // Clear the screen with color
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
@@ -367,27 +368,41 @@ const main = async () => {
         shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
 
         gameLogic.gameProcedure(objects);
+        document.querySelector('#gameOverScreen').hidden = !gameLogic.isGameOver;
+        if (gameLogic.isGameOver && !gameOverNotified) {
+            gameOverNotified = true;
+            window.dispatchEvent(new Event('tetris-game-over'));
+        }
         window.requestAnimationFrame(draw);
     };
 
     /* --------- Restart game --------- */
 
-    const restartGame = () => {
-        if (confirm("Game Over! If you want to restart the game click OK")) {
-            gameLogic = new GameLogic(colors, textures);
-            vaoManager.setTetrisShapeVAO(vaos.VAO_CUBE);
-            gameLogic.startGame(objects);
-            keyboardInteraction.deleteEvents(camera, gameLogic, shaders, vaoManager);
-            keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager);
-            mouseInteraction.deleteEvents(canvas, camera);
-            mouseInteraction.registerEvents(canvas, camera);
-            camera.resetCamera();
-        } else {
-
-        }
+    const resetGame = () => {
+        gameLogic = new GameLogic(colors, textures);
+        gameOverNotified = false;
+        vaoManager.setTetrisShapeVAO(vaos.VAO_CUBE);
+        gameLogic.startGame(objects);
+        keyboardInteraction.deleteEvents(camera, gameLogic, shaders, vaoManager);
+        keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager);
+        mouseInteraction.deleteEvents(canvas, camera);
+        mouseInteraction.registerEvents(canvas, camera);
+        camera.resetCamera();
+        window.dispatchEvent(new Event('tetris-game-restarted'));
     }
 
+    const restartGame = () => {
+        if (confirm("¿Quieres reiniciar la partida?")) resetGame();
+    };
+
+    window.addEventListener('tetris-restart-game', resetGame);
+    document.querySelector('#gameOverRestartButton').addEventListener('click', resetGame);
     document.querySelector('#clickMe').onclick = restartGame;
+
+    if (window.tetrisFreshStartRequested) {
+        window.tetrisFreshStartRequested = false;
+        resetGame();
+    }
 
     window.requestAnimationFrame(draw);
 }

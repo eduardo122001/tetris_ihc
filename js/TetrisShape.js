@@ -29,8 +29,19 @@ class TetrisShape {
     /* -------- Rotate method for shapes -------- */
 
     rotate(axis, angle) {
+        const cubeLength = 0.15;
+        const positions = this.cubes.map(cube => cube.getBuildPosition());
+        const pivot = positions.reduce(
+            (center, position) => [
+                center[0] + position.x / positions.length,
+                center[1] + position.y / positions.length,
+                center[2] + position.z / positions.length
+            ],
+            [0, 0, 0]
+        ).map(coordinate => Math.round(coordinate / cubeLength) * cubeLength);
+
         this.cubes.forEach((cube) => {
-            cube.rotate(axis, angle);
+            cube.rotate(axis, angle, pivot);
         });
     }
 

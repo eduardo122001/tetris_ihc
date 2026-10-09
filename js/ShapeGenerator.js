@@ -70,7 +70,7 @@ class ShapeGenerator {
 
         const tetrisShape = new TetrisShape(this.cubes);
         tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return new TetrisShape(this.cubes);
+        return tetrisShape;
     }
 
     createShapeO(vaoManager) {

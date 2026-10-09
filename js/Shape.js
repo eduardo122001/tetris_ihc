@@ -30,10 +30,8 @@ class Shape {
 
     update(gl, shader, viewMatrix) {
         const modelMatrix = glm.mat4.create();
-
-        // Matrix transformations are read from right to left:
-        glm.mat4.multiply(modelMatrix, this.translateToBuildShapeMatrix, modelMatrix);
-        glm.mat4.multiply(modelMatrix, this.#rotationMatrix, modelMatrix);
+        // Apply local cube offsets, then rotate the piece, then translate it in the world.
+        glm.mat4.multiply(modelMatrix, this.#rotationMatrix, this.translateToBuildShapeMatrix);
         glm.mat4.multiply(modelMatrix, this.#translationMatrix, modelMatrix);
 
         const modelViewMatrix = glm.mat4.create();
@@ -59,8 +57,12 @@ class Shape {
 
     /* -------- Rotate method for shapes -------- */
 
-    rotate(axis, angle) {
+    rotate(axis, angle, pivot = [0, 0, 0]) {
         const rotationMatrix = glm.mat4.create();
+        const rotationAroundPivot = glm.mat4.create();
+        const inversePivot = [-pivot[0], -pivot[1], -pivot[2]];
+
+        glm.mat4.translate(rotationAroundPivot, rotationAroundPivot, pivot);
         switch (axis) {
             case 'x':
             glm.mat4.rotateX(rotationMatrix, rotationMatrix, angle);
@@ -72,9 +74,10 @@ class Shape {
             glm.mat4.rotateZ(rotationMatrix, rotationMatrix, angle);
             break;
         }
+        glm.mat4.multiply(rotationAroundPivot, rotationAroundPivot, rotationMatrix);
+        glm.mat4.translate(rotationAroundPivot, rotationAroundPivot, inversePivot);
 
-        // Apply rotation matrix to the object
-        glm.mat4.multiply(this.#rotationMatrix, rotationMatrix, this.#rotationMatrix);
+        glm.mat4.multiply(this.#rotationMatrix, rotationAroundPivot, this.#rotationMatrix);
     }
 
     /* -------- Translate method for shapes -------- */
@@ -87,12 +90,22 @@ class Shape {
 
     getPosition() {
         const modelMatrix = glm.mat4.create();
-        glm.mat4.multiply(modelMatrix, this.translateToBuildShapeMatrix, modelMatrix);
-        glm.mat4.multiply(modelMatrix, this.#rotationMatrix, modelMatrix);
+        glm.mat4.multiply(modelMatrix, this.#rotationMatrix, this.translateToBuildShapeMatrix);
         glm.mat4.multiply(modelMatrix, this.#translationMatrix, modelMatrix);
 
         const position = glm.vec4.create();
         glm.vec4.transformMat4(position, glm.vec4.fromValues(0, 0, 0, 1), modelMatrix);
+
+        return { x: position[0], y: position[1], z: position[2] };
+    }
+
+    getBuildPosition() {
+        const position = glm.vec4.create();
+        glm.vec4.transformMat4(
+            position,
+            glm.vec4.fromValues(0, 0, 0, 1),
+            this.translateToBuildShapeMatrix
+        );
 
         return { x: position[0], y: position[1], z: position[2] };
     }
