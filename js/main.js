@@ -113,7 +113,7 @@ const main = async () => {
     /* --------- Initialize the tetris shapes to be drawn --------- */
 
     const boundingBox = createBoundingBox(vaoManager);
-    const { lines: grid, floor: floorGrid } = createGrid(vaoManager);
+    const { lines: grid, floor: floorGrid, perspectiveFloor } = createGrid(vaoManager);
     const plane = shapeGenerator.generateGroundPlane(vaoManager);
     const floorSurface = plane.clone();
     floorSurface.translate([0., -0.002, 0.]);
@@ -131,6 +131,7 @@ const main = async () => {
 
     const vaoCube = shapeGenerator.createVAOFromOBJFile(cubeData);
     vaoManager.addVAO(vaoCube, vaos.VAO_CUBE);
+    shapeGenerator.createCubeWireframeVAO(vaoManager);
     const vaoCylinder = shapeGenerator.createVAOFromOBJFile(cylinderData);
     vaoManager.addVAO(vaoCylinder, vaos.VAO_CYLINDER);
     const vaoAmongus = shapeGenerator.createVAOFromOBJFile(amongusData);
@@ -304,14 +305,27 @@ const main = async () => {
         shader.bind(gl);
         shader.uniformMatrices(gl, camera.getProjectionMatrix(), updatedViewMatrix);
 
+        const isPerspectiveView = camera.getIsPerspectiveView();
         shader.setColorUniform(gl, glm.vec4.fromValues(255., 255., 255., 1.), null);
-        boundingBox.drawVisibleLines(gl, shader, updatedViewMatrix, offsets);
+        if(isPerspectiveView) {
+            boundingBox.drawLinesExcludingFace(
+                gl,
+                shader,
+                updatedViewMatrix,
+                offsets,
+                [0, 1, 0]
+            );
+        } else {
+            boundingBox.drawVisibleLines(gl, shader, updatedViewMatrix, offsets);
+        }
 
         if(keyboardInteraction.gridEnabled) {
             shader.setColorUniform(gl, glm.vec4.fromValues(255., 255., 255., 1.), null);
             grid.drawLines(gl, shader, updatedViewMatrix);
-            const [red, green, blue] = LEVEL_COLORS[0];
-            shader.setColorUniform(gl, glm.vec4.fromValues(red, green, blue, 1.), null);
+        }
+        if(!isPerspectiveView) {
+            const [floorRed, floorGreen, floorBlue] = LEVEL_COLORS[0];
+            shader.setColorUniform(gl, glm.vec4.fromValues(floorRed, floorGreen, floorBlue, 1.), null);
             floorGrid.drawLines(gl, shader, updatedViewMatrix);
         }
 
@@ -322,6 +336,7 @@ const main = async () => {
 
         // Draw all the objects in the scene
         gameLogic.tetraCubes.forEach(eachObject => {
+            if(eachObject === gameLogic.currentObject) return;
             shader.lightingUniforms(gl, camera.viewMatrix);
             shader.updateShadingCoefficients(gl, ambientProduct, diffuseProduct, specularProduct);
             shader.setShadingUniforms(gl, ambientProduct, diffuseProduct, specularProduct, shininess);
@@ -336,6 +351,40 @@ const main = async () => {
         shader.setTransparency(gl, glm.vec2.fromValues(1., 0.));
         plane.draw(gl, shader, updatedViewMatrix);
         shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
+        if(isPerspectiveView) {
+            shader = shaders.get('sBase');
+            shader.bind(gl);
+            shader.uniformMatrices(gl, camera.getProjectionMatrix(), updatedViewMatrix);
+            shader.setColorUniform(gl, glm.vec4.fromValues(220., 235., 245., 1.), null);
+            perspectiveFloor.drawLines(gl, shader, updatedViewMatrix);
+
+            shader = keyboardInteraction.selectedShader();
+            shader.bind(gl);
+            shader.uniformMatrices(gl, camera.getProjectionMatrix(), updatedViewMatrix);
+        }
+        if(isPerspectiveView) {
+            shader = shaders.get('sBase');
+            shader.bind(gl);
+            shader.uniformMatrices(gl, camera.getProjectionMatrix(), updatedViewMatrix);
+            shader.setColorUniform(gl, glm.vec4.fromValues(1., 0.92, 0.12, 1.), null);
+            gameLogic.currentObject.drawOutline(
+                gl,
+                shader,
+                updatedViewMatrix,
+                vaos.VAO_CUBE_WIREFRAME
+            );
+        } else {
+            shader.lightingUniforms(gl, camera.viewMatrix);
+            shader.updateShadingCoefficients(gl, ambientProduct, diffuseProduct, specularProduct);
+            shader.setShadingUniforms(gl, ambientProduct, diffuseProduct, specularProduct, shininess);
+            shader.shadowingUniforms(gl, lightMatrix, shadowTexture);
+            gameLogic.currentObject.draw(
+                gl,
+                shader,
+                updatedViewMatrix,
+                false
+            );
+        }
 
         gameLogic.gameProcedure(getAvailableObjects());
         updateGameStats();

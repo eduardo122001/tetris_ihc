@@ -60,17 +60,15 @@ void main() {
     if((abs(angle) > 0.001) && (shadowCoord.z > depth + bias)) {
         vec4 shadowColor = vec4(205. / 255., 205. / 255., 205. / 255., 1.);
         finalColor = mix(finalColor, shadowColor, 0.5);
-    // No shadow
-    } else {
-        if(u_isTransparent[0] > 0.5) {
-            finalColor.a = 0.;
-        }
+    }
 
-        if(u_isTransparent[1] > 0.5) {
-            finalColor.a = 0.7;
-        }
+    if(u_isTransparent[0] > 0.5) {
+        finalColor.a = 0.;
+    }
+
+    if(u_isTransparent[1] > 0.5) {
+        finalColor.a = 0.7;
     }
 
     gl_FragColor = finalColor;
 }
-

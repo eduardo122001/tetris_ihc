@@ -225,11 +225,11 @@ class KeyboardInteraction {
                 break;
                 /* -------- Change camera views -------- */
             case '1':
-                // Vista 2D (desde arriba hacia abajo)
-                if(typeof camera.setTopDownView === 'function') {
-                    camera.setTopDownView();
+                // Perspectiva profunda del tablero
+                if(typeof camera.setPerspectiveView === 'function') {
+                    camera.setPerspectiveView();
                 } else {
-                    console.log("Falta implementar setTopDownView() en Camera.js");
+                    console.log("Falta implementar setPerspectiveView() en Camera.js");
                 }
                 break;
             case '2':

@@ -1,0 +1,60 @@
+Aquí tienes la transcripción completa del texto manuscrito que aparece en la imagen:
+
+**Tetris 3D**
+
+---
+
+**1. Fabricio Messa** — **Nota: 2/5**
+
+* Los controles son algo complejo.
+
+
+* En vez de usar el micro, usar un gesto para bajar la pieza.
+
+
+
+**2. Alejandra Mamani** — **Nota: 3/5**
+
+* Problemas con el reconocimiento de las palabras.
+
+
+* Las vistas son complejo de interpretar al mover el giroscopio ya que este no es muy preciso.
+
+
+
+**3. José Vilca** — **Nota: 2/5**
+
+* El gesto "pulgar abajo" lo entendí sin leer como "ficha hacia abajo" y "pulgar arriba" como poner cámara lenta o subir, algo que te ayude un poco.
+
+
+* La base del Tetris debería tener un color distinto, pensé que la pieza estaba afuera del paralelepípedo.
+
+
+
+**3. Camila Carpio** — **Nota: 3/5**
+
+* No reconocía algunos comandos de voz (algunas veces por ruido).
+
+
+* Las combinaciones para mover las piezas son algo complejas.
+
+
+
+**4. Diego Zeballos** — **Nota: 2/5**
+
+* No reconoce los comandos de voz. Tienen que repetir varias veces, es muy confuso. Las combi de piezas mejorarán el tutorial.
+
+
+
+**5. Sergio Serena** — **Nota: 3/5**
+
+* No reconoció ninguno de los comandos de voz, pero funcionó bien el celular para rotar.
+
+
+* Quizás hacer un menú más interactivo, no comprendí bien la forma de jugar.
+
+
+
+**6. Cristian Mellado Baca** — **Nota: 3/5**
+
+* Algunos de los comandos no llegó a reconocer, reconoció "one", "two", pero no "three". La parte gestos sí funcionó bien, pero creo que podría mejorarse también la parte del juego o niveles, tal vez un nivel 2D.

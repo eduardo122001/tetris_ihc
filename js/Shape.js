@@ -130,6 +130,29 @@ class Shape {
         vao.drawLines(gl);
     }
 
+    drawLinesWithVAO(gl, shader, viewMatrix, vaoIndex) {
+        this.update(gl, shader, viewMatrix);
+
+        const vao = this.#vaoManager.getVAO(vaoIndex);
+        vao.bind(gl);
+        vao.drawLines(gl);
+    }
+
+    drawLinesExcludingFace(gl, shader, viewMatrix, offsets, excludedNormal) {
+        this.update(gl, shader, viewMatrix);
+
+        const vao = this.#vaoManager.getVAO(this.#fixedVaoIndex);
+        vao.bind(gl);
+        for (const offset of offsets) {
+            if (offset.normalVector[0] === excludedNormal[0] &&
+                offset.normalVector[1] === excludedNormal[1] &&
+                offset.normalVector[2] === excludedNormal[2]) {
+                continue;
+            }
+            vao.drawLinesIndexed(gl, offset.indexCount, offset.indexOffset);
+        }
+    }
+
     /* -------- Draw lines for the boudingbox if its not obstructing the view of the tetracubes -------- */
 
     drawVisibleLines(gl, shader, viewMatrix, offsets) {

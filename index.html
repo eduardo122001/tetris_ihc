@@ -47,7 +47,7 @@
       <div class="menu-guide">
         <img class="capibara-image" src="capibara.jpg" alt="Capibara astronauta" />
         <div class="menu-speech-bubble">
-          <p class="menu-prompt">¿Qué hacemos ahora?</p>
+          <p class="menu-prompt">¿Qué hacemos ahora? Muestra tu mano a la camara y haz un gesto.</p>
           <div class="menu-gesture-hints">
             <div class="menu-gesture-hint">
               <img src="apuntando.png" alt="Gesto de apuntar con el índice">
@@ -126,7 +126,7 @@
         <ul class="gesture-cards">
           <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Índice: rotar en Y</span></li>
           <li data-gesture-card="Victory"><img src="victoria.png" alt=""><span>Victoria: bajar pieza</span></li>
-          <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Palma: cambiar cámara</span></li>
+          <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Palma: alternar vistas 1 y 2</span></li>
         </ul>
       </section>
 
@@ -310,6 +310,8 @@
       requestAnimationFrame(() => predecirBucle(video));
     }
 
+    let siguienteVistaPalma = "1";
+
     function ejecutarComandoGesto(gesto) {
       if (!gameMenu.hidden) {
         if (gesto === "Pointing_Up") selectMenuOption("play", gesto);
@@ -328,7 +330,8 @@
           keyToSimulate = " ";
           break;
         case "Open_Palm":
-          keyToSimulate = "c";
+          keyToSimulate = siguienteVistaPalma;
+          siguienteVistaPalma = siguienteVistaPalma === "1" ? "2" : "1";
           break;
       }
 
@@ -384,7 +387,7 @@
     const gestureTutorialSteps = [
       { name: "Pointing_Up", image: "apuntando.png", imageAlt: "Gesto de apuntar con el dedo índice", prompt: "Levanta solo el dedo índice para rotar la pieza sobre el eje Y." },
       { name: "Victory", image: "victoria.png", imageAlt: "Gesto de victoria con dos dedos", prompt: "Haz el gesto de Victoria para hacer bajar rápidamente la pieza." },
-      { name: "Open_Palm", image: "palma.png", imageAlt: "Gesto de palma abierta", prompt: "Muestra la palma para alternar entre las dos vistas de cámara." }
+      { name: "Open_Palm", image: "palma.png", imageAlt: "Gesto de palma abierta", prompt: "Muestra la palma una vez para activar la vista del botón 1. Retira la mano y vuelve a mostrar la palma para activar la vista del botón 2; repite para alternarlas." }
     ];
     const tutorialTotalSteps = gyroTutorialSteps.length + gestureTutorialSteps.length;
 
