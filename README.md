@@ -72,3 +72,34 @@ There is also a "cheating mode" which has been added to make testing easier. If 
 | <kbd>B</kbd>                  | Switch to rendering cylinder instead of tetracubes 	  |
 | <kbd>N</kbd>                 	| Switch to rendering among-us instead of tetracubes  	|
 # tetris_ihc
+
+## Usar el móvil como alternativa al ESP
+
+El ESP sigue siendo la fuente principal y está seleccionada por defecto. La conexión del giroscopio es opcional: el juego inicia cuando la cámara y el modelo de gestos están listos, aunque no haya ESP ni móvil conectados. El giroscopio puede seleccionarse o configurarse desde los controles durante la partida. No se solicita acceso al micrófono.
+
+1. Instala y autentica ngrok una vez en el ordenador (`ngrok config add-authtoken TU_TOKEN`, usando el token de tu cuenta) y asegúrate de que el comando `ngrok` esté en el `PATH`.
+2. Inicia el servidor desde la carpeta del proyecto: `./venv/bin/python server.py` (o activa tu entorno Python y ejecuta `python server.py`). El servidor inicia el túnel HTTPS de ngrok automáticamente y lo cierra al detenerse.
+3. Abre `http://localhost:8080` en el ordenador. El juego y el ESP siguen usando el puerto 8080; la dirección del ESP continúa siendo `/datos`.
+4. La pantalla inicia las verificaciones automáticamente y solicita permiso para usar la cámara. El juego no espera una conexión del giroscopio.
+5. El tutorial prueba primero el giroscopio solo si está conectado; después muestra los cuatro gestos reconocidos por la cámara. La pieza responde en el tablero mientras el tutorial mantiene la gravedad pausada.
+6. Para usar el móvil como giroscopio, abre los controles del juego, selecciona **Móvil** y escanea el QR HTTPS de mando.
+7. En el móvil pulsa **Iniciar sensor** y, si quieres, **Calibrar centro** manteniendo el teléfono en posición neutral. También puedes volver a seleccionar **ESP** en los controles. Las dos fuentes se mantienen separadas.
+
+Si no hay un túnel ngrok disponible, el panel indica si falta instalar ngrok o autenticar la cuenta. No se muestra un QR HTTP porque los navegadores móviles suelen bloquear los sensores en conexiones no seguras.
+
+Pruebas rápidas desde otra terminal:
+
+```sh
+# La ruta existente del ESP (source=esp es el valor predeterminado)
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"x":0.5,"y":0,"z":0}' http://localhost:8080/datos
+
+# La fuente móvil, separada de los datos del ESP
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"gyro":{"x":20,"y":0,"z":0}}' \
+  'http://localhost:8080/datos?source=mobile'
+```
+
+El juego escucha la fuente seleccionada en `/stream?source=esp` o `/stream?source=mobile`.
+
+> Los movimientos de las flechas del juego mueven la pieza cuando está activado **Activate cheatmode**, tal como en los controles de teclado existentes.

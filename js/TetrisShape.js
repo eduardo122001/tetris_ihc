@@ -1,11 +1,11 @@
 import * as glm from './gl-matrix/index.js'
+import { getHeightColorIndex, LEVEL_COLORS } from './levelColors.js';
 
 class TetrisShape {
     constructor(cubes) {
         this.cubes = cubes;
         this.texture = null;
         this.color = null;
-        this.transparency = null;
     }
 
     /* -------- Create deep copy of tetris shape ------- */
@@ -29,8 +29,19 @@ class TetrisShape {
     /* -------- Rotate method for shapes -------- */
 
     rotate(axis, angle) {
+        const cubeLength = 0.15;
+        const positions = this.cubes.map(cube => cube.getBuildPosition());
+        const pivot = positions.reduce(
+            (center, position) => [
+                center[0] + position.x / positions.length,
+                center[1] + position.y / positions.length,
+                center[2] + position.z / positions.length
+            ],
+            [0, 0, 0]
+        ).map(coordinate => Math.round(coordinate / cubeLength) * cubeLength);
+
         this.cubes.forEach((cube) => {
-            cube.rotate(axis, angle);
+            cube.rotate(axis, angle, pivot);
         });
     }
 
@@ -82,24 +93,15 @@ class TetrisShape {
     draw(gl, shader, viewMatrix) {
         shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
         this.cubes.forEach((cube) => {
+            const { y } = cube.getPosition();
+            const [red, green, blue] = LEVEL_COLORS[getHeightColorIndex(y)];
+            shader.setColorUniform(gl, glm.vec4.fromValues(red, green, blue, 1.), null);
             if(this.texture !== null) {
                 gl.activeTexture(gl.TEXTURE0);
                 gl.bindTexture(gl.TEXTURE_2D, this.texture);
             }
-            if(this.color !== null) {
-                shader.setColorUniform(gl, this.color, this.texture);
-            }
-            if(this.transparency !== null) {
-                shader.setTransparency(gl, this.transparency);
-            }
             cube.draw(gl, shader, viewMatrix);
         });
-    }
-
-    /* -------- Set transparency -------- */
-
-    setTransparency(transparency) {
-        this.transparency = transparency;
     }
 }
 

@@ -106,62 +106,32 @@ class KeyboardInteraction {
             /* -------- Rotate shape -------- */
             case 'x':
                 if(isCheatMode(gameLogic)) {
-                    this.#clonedCubies = gameLogic.getTetraCubes().clone();
-                    this.#clonedCubies.rotate('x', ROTATION_ANGLE);
-
-                    if(gameLogic.checkTransform(this.#clonedCubies)) {
-                        gameLogic.getTetraCubes().rotate('x', ROTATION_ANGLE);
-                    }
+                    gameLogic.tryRotate(gameLogic.getTetraCubes(), 'x', ROTATION_ANGLE);
                 }
                 break;
             case 'X':
                 if(isCheatMode(gameLogic)) {
-                    this.#clonedCubies = gameLogic.getTetraCubes().clone();
-                    this.#clonedCubies.rotate('x', -ROTATION_ANGLE);
-
-                    if(gameLogic.checkTransform(this.#clonedCubies)) {
-                        gameLogic.getTetraCubes().rotate('x', -ROTATION_ANGLE);
-                    }
+                    gameLogic.tryRotate(gameLogic.getTetraCubes(), 'x', -ROTATION_ANGLE);
                 }
                 break;
             case 'y':
                 if(isCheatMode(gameLogic)) {
-                    this.#clonedCubies = gameLogic.getTetraCubes().clone();
-                    this.#clonedCubies.rotate('y', ROTATION_ANGLE);
-
-                    if(gameLogic.checkTransform(this.#clonedCubies)) {
-                        gameLogic.getTetraCubes().rotate('y', ROTATION_ANGLE);
-                    }
+                    gameLogic.tryRotate(gameLogic.getTetraCubes(), 'y', ROTATION_ANGLE);
                 }
                 break;
             case 'Y':
                 if(isCheatMode(gameLogic)) {
-                    this.#clonedCubies = gameLogic.getTetraCubes().clone();
-                    this.#clonedCubies.rotate('y', -ROTATION_ANGLE);
-
-                    if(gameLogic.checkTransform(this.#clonedCubies)) {
-                        gameLogic.getTetraCubes().rotate('y', -ROTATION_ANGLE);
-                    }
+                    gameLogic.tryRotate(gameLogic.getTetraCubes(), 'y', -ROTATION_ANGLE);
                 }
                 break;
             case 'z':
                 if(isCheatMode(gameLogic)) {
-                    this.#clonedCubies = gameLogic.getTetraCubes().clone();
-                    this.#clonedCubies.rotate('z', ROTATION_ANGLE);
-
-                    if(gameLogic.checkTransform(this.#clonedCubies)) {
-                        gameLogic.getTetraCubes().rotate('z', ROTATION_ANGLE);
-                    }
+                    gameLogic.tryRotate(gameLogic.getTetraCubes(), 'z', ROTATION_ANGLE);
                 }
                 break;
             case 'Z':
                 if(isCheatMode(gameLogic)) {
-                    this.#clonedCubies = gameLogic.getTetraCubes().clone();
-                    this.#clonedCubies.rotate('z', -ROTATION_ANGLE);
-
-                    if(gameLogic.checkTransform(this.#clonedCubies)) {
-                        gameLogic.getTetraCubes().rotate('z', -ROTATION_ANGLE);
-                    }
+                    gameLogic.tryRotate(gameLogic.getTetraCubes(), 'z', -ROTATION_ANGLE);
                 }
                 break;
 
@@ -218,6 +188,9 @@ class KeyboardInteraction {
             /* -------- Switch view -------- */
             case 'v':
                 camera.switchView(camera.getIsProjectionOrthogonal());
+                break;
+            case 'c':
+                camera.toggleTwoViews();
                 break;
 
             /* -------- Switch shader -------- */

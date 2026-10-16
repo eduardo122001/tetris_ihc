@@ -1,0 +1,21 @@
+# Entornos virtuales de Python
+.venv/
+venv/
+env/
+ENV/
+
+# Dependencias instaladas localmente
+node_modules/
+
+# Archivos generados por Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos del sistema operativo
+.DS_Store
+
+# Variables de entorno y secretos locales
+.env
+.env.*
+!.env.example

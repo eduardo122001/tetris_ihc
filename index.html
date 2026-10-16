@@ -2,6 +2,7 @@
 <html>
 
 <head>
+  <meta charset="UTF-8">
   <title>gfx - lab1c</title>
   <script src="js/main.js" type="module" defer></script>
   <link rel="stylesheet" type="text/css" href="styles.css">
@@ -9,48 +10,175 @@
 
 <body>
 
-  <h2>GFX Lab1c 2023</h2>
+  <section id="loadingScreen" class="loading-screen" aria-labelledby="loadingTitle">
+    <div class="loading-panel">
+      <p class="loading-kicker">3D TETRIS / PREPARANDO PARTIDA</p>
+      <p class="loading-pixel-label" aria-hidden="true">LOADING...</p>
+      <div id="loadingProgress" class="loading-progress" role="progressbar" aria-label="Progreso de carga" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span data-progress-step="camera"></span>
+        <span data-progress-step="gyro"></span>
+      </div>
+      <h1 id="loadingTitle">Cargando Tetris</h1>
+      <p id="loadingMessage" class="loading-message">Iniciando verificaciones de cámara, gestos y giroscopio…</p>
+      <button id="startChecksButton" class="loading-start" type="button" hidden>Iniciar verificaciones</button>
+      <ul class="loading-checks" aria-live="polite">
+        <li data-loading-check="camera"><span>Cámara y modelo de gestos</span><strong>Pendiente</strong></li>
+        <li data-loading-check="gyro"><span>Giroscopio (obligatorio)</span><strong>Pendiente</strong></li>
+      </ul>
+      <section id="mobileFallback" class="mobile-fallback" aria-labelledby="mobileFallbackTitle" hidden>
+        <h2 id="mobileFallbackTitle">Giroscopio sin conexión</h2>
+        <p>Han pasado 5 segundos sin recibir datos. Conecta el giroscopio del móvil o sigue esperando el ESP para continuar.</p>
+        <p>Escanea este código QR con el teléfono para abrir el mando:</p>
+        <div id="loadingMobileQr" class="qr-code" data-placeholder="Cargando QR…" role="img" aria-label="Código QR para abrir el mando móvil"></div>
+        <p id="loadingQrStatus" class="qr-status" role="status"></p>
+        <div class="loading-actions">
+          <button id="useMobileButton" type="button">Usar el móvil</button>
+          <button id="keepEspButton" type="button">Seguir esperando al ESP</button>
+        </div>
+        <p id="mobileInstructions" class="mobile-instructions" hidden>Abre el mando en el teléfono, pulsa “Iniciar sensor” y deja esta pantalla abierta.</p>
+      </section>
+    </div>
+  </section>
 
-  <label for="accept">
-    <input type="checkbox" id="accept" name="accept" value="yes">
-    Activate cheatmode
-  </label>
+  <section id="gameMenu" class="game-menu" aria-labelledby="gameMenuTitle" hidden>
+    <div class="game-menu-panel">
+      <p class="menu-kicker">3D TETRIS / PRESS START</p>
+      <h1 id="gameMenuTitle">¡Listo para jugar!</h1>
+      <div class="menu-guide">
+        <img class="capibara-image" src="capibara.jpg" alt="Capibara astronauta" />
+        <div class="menu-speech-bubble">
+          <p class="menu-prompt">¿Qué hacemos ahora?</p>
+          <div class="menu-gesture-hints">
+            <div class="menu-gesture-hint">
+              <img src="apuntando.png" alt="Gesto de apuntar con el índice">
+              <span>Jugar</span>
+            </div>
+            <div class="menu-gesture-hint">
+              <img src="victoria.png" alt="Gesto de victoria">
+              <span>Iniciar tutorial</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="menu-options">
+        <button id="playMenuButton" type="button"><span>Jugar · Índice</span></button>
+        <button id="tutorialMenuButton" type="button"><span>Tutorial · Victoria</span></button>
+      </div>
+    </div>
+  </section>
 
-  <div class="button-wrapper">
-    <button id="playButton">Play Audio</button>
-    <button id="stopButton">Stop Audio</button>
-    <input id="clickMe" type="button" value="Restart Game" onclick="restartGame();" />
-  </div>
+  <section id="gameOverScreen" class="game-over-screen" aria-labelledby="gameOverTitle" aria-modal="true" role="dialog" hidden>
+    <div class="game-over-panel">
+      <p class="menu-kicker">3D TETRIS / FIN DE PARTIDA</p>
+      <h1 id="gameOverTitle">¡Perdiste!</h1>
+      <div class="menu-guide">
+        <img class="capibara-image" src="capibara.jpg" alt="Capibara astronauta" />
+        <div class="menu-speech-bubble">
+          <p class="menu-prompt">Puedes volver a intentarlo cuando quieras.</p>
+        </div>
+      </div>
+      <button id="gameOverRestartButton" type="button">Jugar de nuevo</button>
+    </div>
+  </section>
 
-  <audio id="audioPlayer" src="audio/tetris-theme.mp3" loop></audio>
+  <main class="game-layout">
+    <aside class="game-sidebar" aria-label="Controles y sensores">
+      <section id="tutorialScreen" class="tutorial-screen" aria-labelledby="tutorialTitle" hidden>
+        <div class="tutorial-guide">
+          <div class="tutorial-bubble">
+            <p class="tutorial-kicker">TUTORIAL / <span id="tutorialStepNumber">01</span></p>
+            <h1 id="tutorialTitle">Mueve la pieza a la derecha</h1>
+            <div class="tutorial-instruction">
+              <img id="tutorialGestureImage" class="tutorial-gesture-image" alt="" hidden>
+              <p id="tutorialStepText" class="tutorial-step-text"></p>
+            </div>
+            <p id="tutorialProgress" class="tutorial-progress" role="status">Esperando los controles del juego…</p>
+            <div class="tutorial-actions">
+              <button id="tutorialSkipButton" class="tutorial-skip" type="button">Saltar tutorial</button>
+            </div>
+          </div>
+          <img class="tutorial-capibara" src="capibara.jpg" alt="Capibara astronauta que te guía en el tutorial">
+        </div>
+      </section>
 
-  <div class="slider">
-    <label for="ambientProduct">Ambient</label>
-    <input type="range" min="0" max="100" value="40" class="slider" id="ambientProduct">
+      <h2 class="sidebar-title">GFX LAB1C / CONTROLES</h2>
 
-    <label for="diffuseProduct">Diffuse</label>
-    <input type="range" min="0" max="100" value="70" class="slider" id="diffuseProduct">
+      <section class="game-stats retro-panel" aria-label="Estadísticas de la partida">
+        <h3>ESTADÍSTICAS DE PARTIDA</h3>
+        <div class="game-level">
+          <span>Nivel de juego</span>
+          <strong id="gameLevel">1</strong>
+        </div>
+        <dl class="game-score">
+          <div><dt>Piezas colocadas</dt><dd id="piecesPlaced">0</dd></div>
+          <div><dt>Líneas destruidas</dt><dd id="linesCleared">0</dd></div>
+        </dl>
+      </section>
 
-    <label for="specularProduct">Specular</label>
-    <input type="range" min="0" max="100" value="100" class="slider" id="specularProduct">
-  </div>
+      <section class="gesture-camera retro-panel" aria-label="Cámara de gestos">
+        <h3>CÁMARA / GESTOS</h3>
+        <video id="webcam" autoplay playsinline></video>
+        <p id="gestureRecognitionStatus" role="status" aria-live="polite">No hay gesto detectado.</p>
+      </section>
 
-  &nbsp;
+      <section class="gesture-guide retro-panel" aria-label="Guía de gestos">
+        <h3>GESTOS / PIEZA Y CÁMARA</h3>
+        <ul class="gesture-cards">
+          <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Índice: rotar en Y</span></li>
+          <li data-gesture-card="Victory"><img src="victoria.png" alt=""><span>Victoria: bajar pieza</span></li>
+          <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Palma: cambiar cámara</span></li>
+        </ul>
+      </section>
 
-  <canvas id="glcanvas" width="550" height="850"></canvas>
+      <section class="sensor-connection retro-panel" aria-label="Conexión de sensores">
+        <h3>GIROSCOPIO</h3>
+        <label for="gyroSource">Giroscopio:</label>
+        <select id="gyroSource">
+          <option value="esp">ESP (opción principal)</option>
+          <option value="mobile">Móvil (alternativa)</option>
+        </select>
+        <span id="sensorConnectionStatus" role="status">Conectando al ESP…</span>
+        <details class="mobile-controller-setup">
+          <summary>Configurar mando móvil / QR</summary>
+          <p>Escanea el código para abrir el mando móvil:</p>
+          <div id="mobileControllerQr" class="qr-code" data-placeholder="Cargando QR…" role="img" aria-label="Código QR para abrir el mando móvil"></div>
+          <p id="controllerQrStatus" class="qr-status" role="status">Preparando código QR…</p>
+        </details>
+      </section>
 
-  <video id="webcam" autoplay playsinline style="
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 160px;
-      border-radius: 8px;
-      z-index: 100;
-    ">
-  </video>
+      <section class="control-deck retro-panel" aria-label="Botones y ajustes del juego">
+        <h3>SISTEMA / AUDIO</h3>
+        <label class="cheat-control" for="accept">
+          <input type="checkbox" id="accept" name="accept" value="yes">
+          Modo de prueba
+        </label>
+        <div class="button-wrapper">
+          <button id="playButton">Play Audio</button>
+          <button id="stopButton">Stop Audio</button>
+          <input id="clickMe" type="button" value="Restart Game" onclick="restartGame();" />
+        </div>
+        <audio id="audioPlayer" src="audio/tetris-theme.mp3" loop></audio>
+        <div class="slider">
+          <label for="ambientProduct">Ambient</label>
+          <input type="range" min="0" max="100" value="40" class="slider" id="ambientProduct">
+          <label for="diffuseProduct">Diffuse</label>
+          <input type="range" min="0" max="100" value="70" class="slider" id="diffuseProduct">
+          <label for="specularProduct">Specular</label>
+          <input type="range" min="0" max="100" value="100" class="slider" id="specularProduct">
+        </div>
+      </section>
+    </aside>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
+    <section class="board-stage" aria-label="Tablero de Tetris">
+      <canvas id="glcanvas" width="550" height="850"></canvas>
+      <aside class="height-palette retro-panel" aria-label="Colores de las alturas del tablero">
+        <h2>ALTURA Y</h2>
+        <div class="level-colors" id="levelColors" aria-label="Paleta de colores para las alturas Y de 0 a 11"></div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
 
@@ -62,166 +190,26 @@
     let gestureRecognizer;
     let ultimoGesto = "None";
     let ultimaVezVideo = -1;
+    let cameraStream = null;
+    const ESP_FALLBACK_TIMEOUT_MS = 5000;
+    const loadingMessage = document.querySelector("#loadingMessage");
+    const startChecksButton = document.querySelector("#startChecksButton");
+    let resolveFirstGestureFrame;
+    let rejectFirstGestureFrame;
+    function setLoadingCheck(name, state, message) {
+      const row = document.querySelector(`[data-loading-check="${name}"]`);
+      row.dataset.state = state;
+      row.querySelector("strong").textContent = message;
 
-    let voiceRecognizer = null;
-    let vozActiva = false;
-
-    let ultimoComandoVoz = "";
-    let ultimoTiempoVoz = 0;
-    let ultimaPalabraVoz = "";
-
-    const UMBRAL_VOZ = 0.9;
-    const COOLDOWN_COMANDO_VOZ = 700;
-    async function pedirMicConConfiguracion() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false,
-          channelCount: 1
-        },
-        video: false
-      });
-
-      return stream;
-    }
-    
-
-
-    async function iniciarReconocimientoVoz() {
-  console.log("🎤 Cargando TensorFlow.js...");
-
-  try {
-    const stream = await pedirMicConConfiguracion();
-
-    voiceRecognizer = speechCommands.create("BROWSER_FFT");
-    await voiceRecognizer.ensureModelLoaded();
-
-    console.log("🎤 Modelo de voz cargado.");
-
-    const palabras = voiceRecognizer.wordLabels();
-    console.log("Palabras disponibles:", palabras);
-
-    voiceRecognizer.listen(
-      resultado => {
-        procesarResultadoVoz(resultado, palabras);
-      },
-      {
-        includeSpectrogram: false,
-        probabilityThreshold: UMBRAL_VOZ,
-        invokeCallbackOnNoiseAndUnknown: false
-      }
-    );
-
-    vozActiva = true;
-    console.log("Reconocimiento de voz ACTIVO.");
-  } catch (error) {
-    console.error("Error iniciando TensorFlow.js:", error);
-  }
-}
-
-    function procesarResultadoVoz(resultado, palabras) {
-      const scores = resultado.scores;
-      let mejorIndice = 0;
-
-      for (let i = 1; i < scores.length; i++) {
-        if (scores[i] > scores[mejorIndice]) {
-          mejorIndice = i;
-        }
-      }
-
-      const palabra = palabras[mejorIndice];
-      const confianza = scores[mejorIndice];
-
-      console.log(
-        "🎤 Voz:", palabra,
-        "| confianza:", (confianza * 100).toFixed(1) + "%"
-      );
-
-      if (
-        confianza < UMBRAL_VOZ ||
-        palabra === "unknown" ||
-        palabra === "_unknown_" ||
-        palabra === "noise" ||
-        palabra === "_background_noise_"
-      ) {
-        return;
-      }
-
-      let comando = null;
-
-      switch (palabra) {
-
-        case "yes":
-          comando = "caer";
-          break;
-        // NUEVOS COMANDOS DE CÁMARA
-        case "one":
-          comando = "camara_2d"; // Vista 2D desde arriba
-          break;
-        case "two":
-          comando = "camara_defecto"; // Vista por defecto
-          break;
-        case "three":
-          comando = "camara_vertical"; // Vista vertical
-          break;
-      }
-
-      if (comando === null) {
-        return;
-      }
-
-      const ahora = Date.now();
-      const mismoComandoReciente = comando === ultimoComandoVoz && ahora - ultimoTiempoVoz < COOLDOWN_COMANDO_VOZ;
-      const mismaPalabraReciente = palabra === ultimaPalabraVoz && ahora - ultimoTiempoVoz < COOLDOWN_COMANDO_VOZ;
-
-      if (mismoComandoReciente || mismaPalabraReciente) {
-        return;
-      }
-
-      ultimoComandoVoz = comando;
-      ultimoTiempoVoz = ahora;
-      ultimaPalabraVoz = palabra;
-
-      console.log("🎮 Comando de voz:", comando);
-      ejecutarComandoVoz(comando);
-    }
-
-    function ejecutarComandoVoz(comando) {
-      let keyToSimulate = null;
-
-      switch (comando) {
-        case "caer":
-          keyToSimulate = " ";
-          break;
-        // NUEVAS SIMULACIONES DE TECLADO PARA CÁMARA
-        case "camara_2d":
-          keyToSimulate = "1";
-          break;
-        case "camara_defecto":
-          keyToSimulate = "2";
-          break;
-        case "camara_vertical":
-          keyToSimulate = "3";
-          break;
-      }
-
-      if (keyToSimulate !== null) {
-        console.log(
-          `🎮 Voz: "${comando}" → ${keyToSimulate === " " ? "Space" : keyToSimulate}`
-        );
-
-        document.dispatchEvent(
-          new KeyboardEvent("keydown", {
-            key: keyToSimulate,
-            code: keyToSimulate === " " ? "Space" : `Digit${keyToSimulate}`,
-            bubbles: true
-          })
-        );
-      }
+      const progressStep = document.querySelector(`[data-progress-step="${name}"]`);
+      progressStep.dataset.state = state;
+      const cameraReady = document.querySelector('[data-loading-check="camera"]').dataset.state === "passed";
+      const gyroReady = document.querySelector('[data-loading-check="gyro"]').dataset.state === "passed";
+      document.querySelector("#loadingProgress").setAttribute("aria-valuenow", String((Number(cameraReady) + Number(gyroReady)) * 50));
     }
 
     async function iniciarMediaPipe() {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
       console.log("Cargando modelo de gestos...");
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
@@ -239,23 +227,40 @@
           numHands: 1
         }
       );
-
       console.log("Modelo de gestos cargado. Encendiendo cámara...");
-      encenderCamara();
+      await encenderCamara(cameraStream);
     }
 
-    function encenderCamara() {
+    async function encenderCamara(stream) {
       const video = document.getElementById("webcam");
+      video.srcObject = stream;
+      await new Promise((resolve, reject) => {
+        video.addEventListener("loadeddata", resolve, { once: true });
+        video.addEventListener("error", () => reject(new Error("No se pudo iniciar el video de la cámara.")), { once: true });
+      });
+      await video.play();
+      const firstFrame = new Promise((resolve, reject) => {
+        resolveFirstGestureFrame = resolve;
+        rejectFirstGestureFrame = reject;
+        window.setTimeout(() => reject(new Error("El modelo de gestos no respondió a la cámara.")), 10000);
+      });
+      predecirBucle(video);
+      await firstFrame;
+    }
 
-      navigator.mediaDevices
-        .getUserMedia({ video: true })
-        .then(stream => {
-          video.srcObject = stream;
-          video.addEventListener("loadeddata", () => predecirBucle(video));
-        })
-        .catch(err => {
-          console.error("Error al acceder a la cámara:", err);
-        });
+    function actualizarVistaGesto(gesture) {
+      const status = document.querySelector("#gestureRecognitionStatus");
+      const gestureName = gestureDisplayNames[gesture];
+      status.textContent = gestureName
+        ? `Gesto detectado: ${gestureName}`
+        : "No hay gesto detectado.";
+
+      document.querySelectorAll("[data-gesture-card]").forEach(card => {
+        const active = card.dataset.gestureCard === gesture;
+        card.dataset.active = String(active);
+        if (active) card.setAttribute("aria-current", "true");
+        else card.removeAttribute("aria-current");
+      });
     }
 
     function predecirBucle(video) {
@@ -264,19 +269,39 @@
       if (video.currentTime !== ultimaVezVideo) {
         ultimaVezVideo = video.currentTime;
 
-        const resultados = gestureRecognizer.recognizeForVideo(video, tiempoActual);
+        let resultados;
+        try {
+          resultados = gestureRecognizer.recognizeForVideo(video, tiempoActual);
+          if (resolveFirstGestureFrame) {
+            resolveFirstGestureFrame();
+            resolveFirstGestureFrame = null;
+            rejectFirstGestureFrame = null;
+          }
+        } catch (error) {
+          if (rejectFirstGestureFrame) {
+            rejectFirstGestureFrame(error);
+            rejectFirstGestureFrame = null;
+            resolveFirstGestureFrame = null;
+            return;
+          }
+          console.error("Error al analizar un gesto:", error);
+          requestAnimationFrame(() => predecirBucle(video));
+          return;
+        }
 
         if (resultados.gestures.length > 0) {
           const gestoActual = resultados.gestures[0][0].categoryName;
 
           if (gestoActual !== ultimoGesto) {
             console.log("Gesto detectado:", gestoActual);
+            actualizarVistaGesto(gestoActual);
             ultimoGesto = gestoActual;
             ejecutarComandoGesto(gestoActual);
           }
         } else {
           if (ultimoGesto !== "None") {
             console.log("Gesto detectado: None (Sin mano)");
+            actualizarVistaGesto("None");
             ultimoGesto = "None";
           }
         }
@@ -286,28 +311,24 @@
     }
 
     function ejecutarComandoGesto(gesto) {
+      if (!gameMenu.hidden) {
+        if (gesto === "Pointing_Up") selectMenuOption("play", gesto);
+        else if (gesto === "Victory") selectMenuOption("tutorial", gesto);
+        return;
+      }
+      if (!window.tetrisGameStarted) return;
+
       let keyToSimulate = null;
 
       switch (gesto) {
         case "Pointing_Up":
-          keyToSimulate = "x";
-          break;
-        case "Open_Palm":
-          keyToSimulate = "X";
-          break;
-        case "Thumb_Down":
           keyToSimulate = "y";
           break;
-        case "Thumb_Up":
-          keyToSimulate = "Y";
-          break;
-        case "Closed_Fist":
-          break;
         case "Victory":
-          keyToSimulate = "z";
+          keyToSimulate = " ";
           break;
-        case "ILoveYou":
-          keyToSimulate = "Z";
+        case "Open_Palm":
+          keyToSimulate = "c";
           break;
       }
 
@@ -324,26 +345,435 @@
           })
         );
       }
+      if (!document.querySelector("#tutorialScreen").hidden) {
+        recordTutorialGesture(gesto);
+      }
     }
 
-    iniciarMediaPipe();
-    iniciarReconocimientoVoz();
+    const loadingScreen = document.querySelector("#loadingScreen");
+    const gameMenu = document.querySelector("#gameMenu");
+    const tutorialScreen = document.querySelector("#tutorialScreen");
+    const tutorialTitle = document.querySelector("#tutorialTitle");
+    const tutorialStepText = document.querySelector("#tutorialStepText");
+    const tutorialProgress = document.querySelector("#tutorialProgress");
+    const tutorialGestureImage = document.querySelector("#tutorialGestureImage");
+    const mobileFallback = document.querySelector("#mobileFallback");
+    let cameraReady = false;
+    let gyroDetected = false;
+    let gamePrepared = window.tetrisGamePrepared === true;
+    let mobileSelected = false;
+    let espFallbackTimer;
+    let tutorialMode = null;
+    let tutorialStep = 0;
+    let previousCheatMode = false;
+    const gestureDisplayNames = {
+      Pointing_Up: "Apuntando",
+      Open_Palm: "Palma abierta",
+      Thumb_Down: "Pulgar abajo",
+      Thumb_Up: "Pulgar arriba",
+      Closed_Fist: "Mano cerrada",
+      Victory: "Victoria",
+      ILoveYou: "I love you"
+    };
+    const gyroTutorialSteps = [
+      { key: "ArrowRight", title: "Inclina a la derecha", prompt: "Inclina el giroscopio a la derecha una vez. Después vuelve al centro." },
+      { key: "ArrowLeft", title: "Inclina a la izquierda", prompt: "Inclina el giroscopio a la izquierda una vez. Después vuelve al centro." },
+      { key: "ArrowUp", title: "Inclina hacia arriba", prompt: "Inclina el giroscopio hacia arriba una vez. Después vuelve al centro." },
+      { key: "ArrowDown", title: "Inclina hacia abajo", prompt: "Inclina el giroscopio hacia abajo una vez. Después vuelve al centro." }
+    ];
+    const gestureTutorialSteps = [
+      { name: "Pointing_Up", image: "apuntando.png", imageAlt: "Gesto de apuntar con el dedo índice", prompt: "Levanta solo el dedo índice para rotar la pieza sobre el eje Y." },
+      { name: "Victory", image: "victoria.png", imageAlt: "Gesto de victoria con dos dedos", prompt: "Haz el gesto de Victoria para hacer bajar rápidamente la pieza." },
+      { name: "Open_Palm", image: "palma.png", imageAlt: "Gesto de palma abierta", prompt: "Muestra la palma para alternar entre las dos vistas de cámara." }
+    ];
+    const tutorialTotalSteps = gyroTutorialSteps.length + gestureTutorialSteps.length;
 
+    function showMobileFallback() {
+      if (gyroDetected || mobileSelected || document.querySelector("#gyroSource").value !== "esp") return;
+      mobileFallback.hidden = false;
+      setLoadingCheck("gyro", "waiting", "Sin conexión · obligatorio");
+      loadingMessage.textContent = "El giroscopio es obligatorio para jugar. Conecta el móvil o espera a que responda el ESP.";
+    }
+
+    function startGameWhenReady() {
+      if (!cameraReady || !gyroDetected || !gamePrepared || !gameMenu.hidden) return;
+      loadingScreen.hidden = true;
+      gameMenu.hidden = false;
+    }
+
+    function launchGame() {
+      const finishingTutorial = tutorialMode !== null;
+      tutorialScreen.hidden = true;
+      gameMenu.hidden = true;
+      document.body.classList.remove("tutorial-active");
+      document.querySelector("#accept").checked = previousCheatMode;
+      tutorialMode = null;
+      window.tetrisTutorialMode = false;
+      if (finishingTutorial) window.dispatchEvent(new Event("tetris-tutorial-finished"));
+      window.tetrisSensorsReady = true;
+      window.dispatchEvent(new Event("tetris-sensors-ready"));
+    }
+
+    function selectMenuOption(option, triggeringGesture = null) {
+      if (gameMenu.hidden) return;
+      gameMenu.hidden = true;
+      if (option === "tutorial") {
+        previousCheatMode = document.querySelector("#accept").checked;
+        document.querySelector("#accept").checked = true;
+        ultimoGesto = triggeringGesture ?? "None";
+        window.tetrisTutorialMode = true;
+        tutorialScreen.hidden = false;
+        document.body.classList.add("tutorial-active");
+        tutorialMode = gyroDetected ? "gyro" : "gesture";
+        tutorialStep = 0;
+        updateTutorialStep();
+        window.tetrisSensorsReady = true;
+        window.dispatchEvent(new Event("tetris-sensors-ready"));
+        return;
+      }
+      window.tetrisFreshStartRequested = true;
+      window.tetrisTutorialMode = false;
+      launchGame();
+    }
+
+    function updateTutorialStep() {
+      const stepNumber = tutorialStep + 1;
+      document.querySelector("#tutorialStepNumber").textContent =
+        `${String(stepNumber).padStart(2, "0")} / ${
+          tutorialMode === "gyro" ? tutorialTotalSteps : gestureTutorialSteps.length
+        }`;
+
+      if (tutorialMode === "gyro") {
+        const step = gyroTutorialSteps[tutorialStep];
+        tutorialGestureImage.hidden = true;
+        tutorialTitle.textContent = step.title;
+        tutorialStepText.textContent = step.prompt;
+        tutorialProgress.textContent = "Mira cómo responde la pieza en el tablero.";
+      } else if (tutorialMode === "gesture") {
+        const step = gestureTutorialSteps[tutorialStep];
+        tutorialGestureImage.src = step.image;
+        tutorialGestureImage.alt = step.imageAlt;
+        tutorialGestureImage.hidden = false;
+        tutorialTitle.textContent = `Gesto ${tutorialStep + 1} de ${gestureTutorialSteps.length}`;
+        tutorialStepText.textContent = step.prompt;
+        tutorialProgress.textContent = "Espera a que se detecte el gesto; retira la mano entre intentos.";
+      }
+    }
+
+    function advanceTutorialStep() {
+      tutorialStep++;
+      if (tutorialMode === "gyro" && tutorialStep === gyroTutorialSteps.length) {
+        tutorialMode = "gesture";
+        tutorialStep = 0;
+      } else if (tutorialMode === "gesture" && tutorialStep === gestureTutorialSteps.length) {
+        tutorialTitle.textContent = "¡Tutorial terminado!";
+        tutorialStepText.textContent = "Ya probaste los gestos para rotar y bajar la pieza. La partida comienza ahora.";
+        tutorialProgress.textContent = "";
+        tutorialMode = "complete";
+        window.setTimeout(launchGame, 1400);
+        return;
+      }
+      updateTutorialStep();
+    }
+
+    function recordTutorialGyroDirection(direction) {
+      if (tutorialMode !== "gyro" || !window.tetrisGameStarted) return;
+      const expected = gyroTutorialSteps[tutorialStep];
+      if (direction !== expected.key) {
+        tutorialProgress.textContent = `Detecté ${direction.replace("Arrow", "").toLowerCase()}. Prueba ahora: ${expected.title.toLowerCase()}.`;
+        return;
+      }
+      tutorialProgress.textContent = "¡Bien! La pieza respondió al giroscopio.";
+      advanceTutorialStep();
+    }
+    window.handleTutorialGyroDirection = recordTutorialGyroDirection;
+
+    function recordTutorialGesture(gesture) {
+      if (tutorialMode !== "gesture") return;
+      const expected = gestureTutorialSteps[tutorialStep];
+      if (gesture !== expected.name) {
+        tutorialProgress.textContent = `Detecté ${gesture}. Ahora prueba: ${expected.name}.`;
+        return;
+      }
+      tutorialProgress.textContent = `¡${gesture} detectado! La pieza giró.`;
+      advanceTutorialStep();
+    }
+
+    async function monitorGyroscope() {
+      const startedAt = Date.now();
+      while (!gyroDetected) {
+        const source = document.querySelector("#gyroSource").value;
+        try {
+          const response = await fetch(`/sensor-status?source=${encodeURIComponent(source)}`, { cache: "no-store" });
+          if (!response.ok) throw new Error(`El servidor respondió ${response.status}.`);
+          const { connected } = await response.json();
+          if (connected) {
+            gyroDetected = true;
+            window.clearTimeout(espFallbackTimer);
+            mobileFallback.hidden = true;
+            setLoadingCheck("gyro", "passed", `${source === "esp" ? "ESP" : "Móvil"} responde`);
+            loadingMessage.textContent = "Giroscopio verificado.";
+            startGameWhenReady();
+            return;
+          }
+
+          if (source === "mobile") {
+            setLoadingCheck("gyro", "active", "Esperando al móvil");
+          } else if (Date.now() - startedAt >= ESP_FALLBACK_TIMEOUT_MS) {
+            showMobileFallback();
+          } else {
+            const seconds = Math.max(0, Math.ceil((ESP_FALLBACK_TIMEOUT_MS - (Date.now() - startedAt)) / 1000));
+            setLoadingCheck("gyro", "active", `Buscando ESP · ${seconds} s`);
+          }
+        } catch (error) {
+          console.error("No se pudo comprobar el giroscopio:", error);
+          if (source === "esp" && Date.now() - startedAt >= ESP_FALLBACK_TIMEOUT_MS) {
+            showMobileFallback();
+          } else {
+            setLoadingCheck("gyro", "error", "Error al consultar el servidor");
+            loadingMessage.textContent = `No se pudo comprobar el giroscopio: ${error.message}`;
+          }
+        }
+        await new Promise(resolve => window.setTimeout(resolve, 500));
+      }
+    }
+
+    document.querySelector("#useMobileButton").addEventListener("click", () => {
+      mobileSelected = true;
+      window.clearTimeout(espFallbackTimer);
+      const sourceSelect = document.querySelector("#gyroSource");
+      sourceSelect.value = "mobile";
+      sourceSelect.dispatchEvent(new Event("change"));
+      document.querySelector("#mobileFallbackTitle").textContent = "Conecta el mando móvil";
+      document.querySelector("#mobileFallback").querySelector("p").textContent =
+        "Abre el mando en el teléfono y pulsa “Iniciar sensor”. Esta pantalla seguirá esperando sus lecturas.";
+      document.querySelector("#mobileInstructions").hidden = false;
+      document.querySelector("#useMobileButton").hidden = true;
+      document.querySelector("#keepEspButton").hidden = true;
+      setLoadingCheck("gyro", "active", "Esperando al móvil");
+      loadingMessage.textContent = "Esperando la respuesta del giroscopio del móvil…";
+    });
+
+    document.querySelector("#keepEspButton").addEventListener("click", () => {
+      document.querySelector("#keepEspButton").hidden = true;
+      loadingMessage.textContent = "Sigo esperando el giroscopio. También puedes cambiar al móvil.";
+    });
+
+    document.querySelector("#playMenuButton").addEventListener("click", () => selectMenuOption("play"));
+    document.querySelector("#tutorialMenuButton").addEventListener("click", () => selectMenuOption("tutorial"));
+    document.querySelector("#tutorialSkipButton").addEventListener("click", launchGame);
+
+    startChecksButton.addEventListener("click", async () => {
+      if (startChecksButton.textContent === "Recargar página") {
+        window.location.reload();
+        return;
+      }
+      startChecksButton.disabled = true;
+      startChecksButton.hidden = true;
+      loadingMessage.textContent = "Cargando el modelo de gestos y buscando el giroscopio…";
+      setLoadingCheck("camera", "active", "Cargando modelo y cámara");
+      setLoadingCheck("gyro", "active", "Buscando ESP");
+      espFallbackTimer = window.setTimeout(showMobileFallback, ESP_FALLBACK_TIMEOUT_MS);
+      monitorGyroscope();
+
+      try {
+        await iniciarMediaPipe();
+        setLoadingCheck("camera", "passed", "Listo");
+      } catch (error) {
+        console.error("Falló la comprobación de la cámara:", error);
+        setLoadingCheck("camera", "error", error.message || "No disponible");
+        cameraStream?.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        document.querySelector("#webcam").srcObject = null;
+        loadingMessage.textContent = "No se pudo verificar la cámara. Revisa los permisos y recarga la página para intentarlo de nuevo.";
+        startChecksButton.textContent = "Recargar página";
+        startChecksButton.hidden = false;
+        return;
+      }
+
+      cameraReady = true;
+      loadingMessage.textContent = "Cámara y gestos responden. Esperando la conexión del giroscopio…";
+      startGameWhenReady();
+    });
+
+    window.addEventListener("tetris-game-prepared", () => {
+      gamePrepared = true;
+      startGameWhenReady();
+    });
+    window.addEventListener("tetris-started", () => {
+      ultimoGesto = "None";
+      actualizarVistaGesto("None");
+      if (tutorialMode === "gyro") {
+        tutorialProgress.textContent = "Tablero listo. Inclina el giroscopio y mira cómo responde la pieza.";
+      }
+    });
+    startChecksButton.click();
   </script>
 
-  <script>
-    // Conectarse al flujo de datos del servidor local
-    const origenEventos = new EventSource('/stream');
 
-    origenEventos.onmessage = function (evento) {
-      const mcuData = JSON.parse(evento.data);
-      console.log("🕹️ Giroscopio MCU:", mcuData);
+<script>
+  const gyroSource = document.querySelector("#gyroSource");
+  const sensorConnectionStatus = document.querySelector("#sensorConnectionStatus");
+  let sensorEvents;
+  let currentDirection = null;
+
+  function simulateTetrisKey(key) {
+    document.dispatchEvent(new KeyboardEvent("keydown", {
+      key,
+      code: key,
+      bubbles: true
+    }));
+    window.handleTutorialGyroDirection?.(key);
+  }
+
+  function findAxis(reading, axis) {
+    if (Number.isFinite(reading?.[axis])) return reading[axis];
+    if (Number.isFinite(reading?.gyro?.[axis])) return reading.gyro[axis];
+    return undefined;
+  }
+
+  function connectSensor(source) {
+    if (sensorEvents) sensorEvents.close();
+    currentDirection = null;
+    sensorConnectionStatus.textContent = `Conectando al ${source === "esp" ? "ESP" : "móvil"}…`;
+    sensorEvents = new EventSource(`/stream?source=${encodeURIComponent(source)}`);
+
+    sensorEvents.onopen = () => {
+      sensorConnectionStatus.textContent = `Escuchando ${source === "esp" ? "ESP" : "móvil"}.`;
     };
 
-    origenEventos.onerror = function () {
-      console.error("Desconectado del servidor del MCU. Intentando reconectar...");
+    sensorEvents.onmessage = event => {
+      let reading;
+      try {
+        reading = JSON.parse(event.data);
+      } catch (error) {
+        console.error("El servidor envió datos de sensor no válidos:", error);
+        sensorConnectionStatus.textContent = "Error: datos del sensor no válidos.";
+        return;
+      }
+
+      const x = findAxis(reading, "x");
+      const y = findAxis(reading, "y");
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+      if (source === "esp") {
+        const movementThreshold = 0.35;
+        const centerThreshold = 0.15;
+        let direction = null;
+        if (x > movementThreshold && currentDirection !== "ArrowRight") direction = "ArrowLeft";
+        else if (x < -movementThreshold && currentDirection !== "ArrowLeft") direction = "ArrowRight";
+        else if (y > movementThreshold && currentDirection !== "ArrowDown") direction = "ArrowDown";
+        else if (y < -movementThreshold && currentDirection !== "ArrowUp") direction = "ArrowUp";
+        else if (Math.abs(x) < centerThreshold && Math.abs(y) < centerThreshold) currentDirection = null;
+
+        if (direction) {
+          simulateTetrisKey(direction);
+          currentDirection = direction;
+        }
+        return;
+      }
+
+      const horizontal = y;
+      const vertical = x;
+      const movementThreshold = 12;
+      let direction = null;
+      if (Math.max(Math.abs(horizontal), Math.abs(vertical)) >= movementThreshold) {
+        if (Math.abs(horizontal) > Math.abs(vertical)) {
+          direction = horizontal > 0 ? "ArrowRight" : "ArrowLeft";
+        } else {
+          direction = vertical > 0 ? "ArrowDown" : "ArrowUp";
+        }
+      }
+
+      if (!direction) {
+        const activeAxis = currentDirection === "ArrowLeft" || currentDirection === "ArrowRight"
+          ? horizontal
+          : vertical;
+        if (Math.abs(activeAxis) < 8) currentDirection = null;
+      } else if (direction !== currentDirection) {
+        simulateTetrisKey(direction);
+        currentDirection = direction;
+      }
     };
-  </script>
+
+    sensorEvents.onerror = () => {
+      sensorConnectionStatus.textContent = `Esperando datos del ${source === "esp" ? "ESP" : "móvil"}…`;
+    };
+  }
+
+  gyroSource.value = "esp";
+  gyroSource.addEventListener("change", () => connectSensor(gyroSource.value));
+  connectSensor(gyroSource.value);
+
+  let renderedMobileUrl = null;
+  let lastNgrokStatus = null;
+  const qrElements = [
+    [document.querySelector("#mobileControllerQr"), document.querySelector("#controllerQrStatus")],
+    [document.querySelector("#loadingMobileQr"), document.querySelector("#loadingQrStatus")]
+  ];
+
+  const updateMobileQr = async () => {
+    try {
+      const response = await fetch("/connection-info", { cache: "no-store" });
+      if (!response.ok) throw new Error(`El servidor respondió ${response.status}.`);
+      const { mobileUrl, connectionType, ngrokStatus } = await response.json();
+
+      if (connectionType !== "ngrok") {
+        const message = ngrokStatus === "unavailable"
+          ? "ngrok no está instalado. Instálalo y reinicia el servidor para habilitar el QR HTTPS."
+          : ngrokStatus === "failed"
+            ? "ngrok no pudo iniciar. Revisa que tu cuenta esté autenticada y reinicia el servidor."
+            : "Iniciando el túnel HTTPS de ngrok…";
+        qrElements.forEach(([element, statusElement]) => {
+          if (renderedMobileUrl !== null || element.childElementCount > 0) element.replaceChildren();
+          element.dataset.placeholder = message;
+          statusElement.textContent = message;
+        });
+        renderedMobileUrl = null;
+        if (lastNgrokStatus !== ngrokStatus) {
+          sensorConnectionStatus.textContent = message;
+          lastNgrokStatus = ngrokStatus;
+        }
+        return;
+      }
+
+      if (typeof QRCode !== "function") {
+        throw new Error("No se pudo cargar el generador de códigos QR.");
+      }
+
+      if (renderedMobileUrl !== mobileUrl) {
+        qrElements.forEach(([element, statusElement]) => {
+          element.replaceChildren();
+          new QRCode(element, {
+            text: mobileUrl,
+            width: 192,
+            height: 192,
+            colorDark: "#080d18",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+          element.dataset.placeholder = "";
+          statusElement.textContent = "Escanea para abrir mando.html por HTTPS";
+        });
+        renderedMobileUrl = mobileUrl;
+      }
+      if (lastNgrokStatus !== "ready") {
+        sensorConnectionStatus.textContent = "Puente HTTPS de ngrok listo para el móvil.";
+        lastNgrokStatus = "ready";
+      }
+    } catch (error) {
+      console.error("No se pudo generar el QR del mando móvil:", error);
+      qrElements.forEach(([element, statusElement]) => {
+        element.replaceChildren();
+        element.dataset.placeholder = "QR no disponible";
+        statusElement.textContent = error.message;
+      });
+    }
+  };
+
+  updateMobileQr();
+  window.setInterval(updateMobileQr, 3000);
+</script>
 </body>
 
 </html>

@@ -9,6 +9,7 @@ class Camera {
     #orthogonalProjectionMatrix = glm.mat4.create();
     #perspectiveProjectionMatrix = glm.mat4.create();
     #isProjectionOrthogonal = true;
+    #isTopDownView = false;
 
     constructor() {
         this.viewMatrix = this.#initViewMatrix(glm.mat4.create());
@@ -133,10 +134,19 @@ class Camera {
         this.resetCamera();
         this.rotateCamera('x', Math.PI / 4);
         this.rotateCamera('z', 9 * Math.PI / 180 * 5);
+        this.#isTopDownView = true;
     }
 
     setDefaultView() {
         this.resetCamera();
+    }
+
+    toggleTwoViews() {
+        if (this.#isTopDownView) {
+            this.setDefaultView();
+        } else {
+            this.setTopDownView();
+        }
     }
 
     setVerticalView() {
@@ -148,6 +158,7 @@ class Camera {
         this.#globalRotationMatrix = glm.mat4.create();
         this.#scalingMatrix = glm.mat4.create();
         this.#isProjectionOrthogonal = true;
+        this.#isTopDownView = false;
         this.#placeCameraView();
     }
 }
