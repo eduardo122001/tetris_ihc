@@ -16,6 +16,25 @@ class ShapeGenerator {
         );
     }
 
+    createCubeWireframeVAO(vaoManager) {
+        const vertices = [
+            -0.075, -0.075, -0.075,
+            -0.075, -0.075,  0.075,
+            -0.075,  0.075, -0.075,
+            -0.075,  0.075,  0.075,
+             0.075, -0.075, -0.075,
+             0.075, -0.075,  0.075,
+             0.075,  0.075, -0.075,
+             0.075,  0.075,  0.075
+        ];
+        const indices = [
+            0, 1, 0, 2, 0, 4, 1, 3, 1, 5, 2, 3,
+            2, 6, 3, 7, 4, 5, 4, 6, 5, 7, 6, 7
+        ];
+        const vao = new VAO(vertices, null, indices, null);
+        vaoManager.addVAO(vao, vaos.VAO_CUBE_WIREFRAME);
+    }
+
     createFlatShape(vaoManager, cells) {
         this.cubes = [];
 

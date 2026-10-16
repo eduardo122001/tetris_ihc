@@ -90,17 +90,27 @@ class TetrisShape {
 
     /* -------- Draw shape -------- */
 
-    draw(gl, shader, viewMatrix) {
-        shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
-        this.cubes.forEach((cube) => {
-            const { y } = cube.getPosition();
-            const [red, green, blue] = LEVEL_COLORS[getHeightColorIndex(y)];
-            shader.setColorUniform(gl, glm.vec4.fromValues(red, green, blue, 1.), null);
-            if(this.texture !== null) {
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, this.texture);
-            }
-            cube.draw(gl, shader, viewMatrix);
+    draw(gl, shader, viewMatrix, isTransparent = false) {
+        shader.setTransparency(gl, glm.vec2.fromValues(0., Number(isTransparent)));
+        try {
+            this.cubes.forEach((cube) => {
+                const { y } = cube.getPosition();
+                const [red, green, blue] = LEVEL_COLORS[getHeightColorIndex(y)];
+                shader.setColorUniform(gl, glm.vec4.fromValues(red, green, blue, 1.), null);
+                if(this.texture !== null) {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+                }
+                cube.draw(gl, shader, viewMatrix);
+            });
+        } finally {
+            shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
+        }
+    }
+
+    drawOutline(gl, shader, viewMatrix, wireframeVaoIndex) {
+        this.cubes.forEach(cube => {
+            cube.drawLinesWithVAO(gl, shader, viewMatrix, wireframeVaoIndex);
         });
     }
 }
