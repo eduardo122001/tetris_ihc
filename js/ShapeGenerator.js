@@ -16,165 +16,77 @@ class ShapeGenerator {
         );
     }
 
-    createShapeI(vaoManager) {
+    createFlatShape(vaoManager, cells) {
         this.cubes = [];
 
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
+        const maxX = Math.max(...cells.map(([x]) => x));
+        const maxZ = Math.max(...cells.map(([, z]) => z));
+
+        for (const [x, z] of cells) {
             const shape = new Shape(vaoManager);
+            glm.mat4.translate(shape.translateToBuildShapeMatrix, shape.translateToBuildShapeMatrix, [x * cubeLength, 0, z * cubeLength]);
             this.cubes.push(shape);
         }
 
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [1 * cubeLength, 0, 0]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [2 * cubeLength, 0, 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [3 * cubeLength, 0, 0]);
-
         const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([-0.225, 0.975, cubeLength/2]);
+        tetrisShape.translate([
+            -Math.floor(maxX / 2) * cubeLength,
+            cubeLength * 6.5,
+            -Math.floor(maxZ / 2) * cubeLength
+        ]);
         return tetrisShape;
     }
 
-    createShapeL(vaoManager) {
-        this.cubes = [];
-
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
-
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [0, 1 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [0, 2 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [0, 0, 1  * cubeLength]);
-
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeMonomino(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0]]);
     }
 
-    createShapeN(vaoManager) {
-        this.cubes = [];
-
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
-
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [0, 1 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [0, 1 * cubeLength, 1 * cubeLength]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [0, 2 * cubeLength, 1 * cubeLength]);
-
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeDomino(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0]]);
     }
 
-    createShapeO(vaoManager) {
-        this.cubes = [];
-
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
-
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [1 * cubeLength, 0, 0]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [0, (1 * cubeLength), 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [1 * cubeLength, (1 * cubeLength), 0]);
-
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeTrominoStraight(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [2, 0]]);
     }
 
-    createShapeT(vaoManager) {
-        this.cubes = [];
-
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
-
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [0, 1 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [0, 2 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [0, 1 * cubeLength, 1 * cubeLength]);
-
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeTrominoL(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [0, 1]]);
     }
 
-    createShapeTowerLeft(vaoManager) {
-        this.cubes = [];
-
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
-
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [1 * cubeLength, 1 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [1 * cubeLength, 0, 1 * cubeLength]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [1 * cubeLength, 0, 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [0, 0, 1 * cubeLength]);
-
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeTetrominoI(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [2, 0], [3, 0]]);
     }
 
-    createShapeTowerRight(vaoManager) {
-        this.cubes = [];
-
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
-
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [1 * cubeLength, 0, 1 * cubeLength]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [0, 1 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [0, 0, 1 * cubeLength]);
-
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeTetrominoO(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [0, 1], [1, 1]]);
     }
 
-    createShapeTripod(vaoManager) {
-        this.cubes = [];
+    createShapeTetrominoT(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [2, 0], [1, 1]]);
+    }
 
-        // Create the cubes
-        for(let i = 0; i < 4; i++) {
-            const shape = new Shape(vaoManager);
-            this.cubes.push(shape);
-        }
+    createShapeTetrominoL(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [2, 0], [2, 1]]);
+    }
 
-        glm.mat4.translate(this.cubes[0].translateToBuildShapeMatrix, this.cubes[0].translateToBuildShapeMatrix, [0, 0, 0]);
-        glm.mat4.translate(this.cubes[1].translateToBuildShapeMatrix, this.cubes[1].translateToBuildShapeMatrix, [1 * cubeLength, 0, 0]);
-        glm.mat4.translate(this.cubes[2].translateToBuildShapeMatrix, this.cubes[2].translateToBuildShapeMatrix, [0, 1 * cubeLength, 0]);
-        glm.mat4.translate(this.cubes[3].translateToBuildShapeMatrix, this.cubes[3].translateToBuildShapeMatrix, [0, 0, 1 * cubeLength]);
+    createShapeTetrominoJ(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [2, 0], [0, 1]]);
+    }
 
-        const tetrisShape = new TetrisShape(this.cubes);
-        tetrisShape.translate([cubeLength / 2, cubeLength * 6.5, cubeLength /2]);
-        return tetrisShape;
+    createShapeTetrominoS(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 0], [1, 0], [1, 1], [2, 1]]);
+    }
+
+    createShapeTetrominoZ(vaoManager) {
+        return this.createFlatShape(vaoManager, [[0, 1], [1, 1], [1, 0], [2, 0]]);
     }
 
     generateGroundPlane(vaoManager) {
         const vertices = [
-            //-0.30, -0.90, -0.30
-            -0.3, -0.9, -0.3,
-            -0.3, -0.9, 0.3,
-            0.3, -0.9, -0.3,
-            0.3, -0.9, 0.3
+            -0.375, -0.9, -0.375,
+            -0.375, -0.9, 0.375,
+            0.375, -0.9, -0.375,
+            0.375, -0.9, 0.375
         ];
 
         const indices = [

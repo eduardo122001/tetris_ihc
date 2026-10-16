@@ -6,6 +6,7 @@ import { MouseInteraction } from './MouseInteraction.js';
 import { ShapeGenerator } from './ShapeGenerator.js';
 import { OBJParser } from './OBJParser.js';
 import { GameLogic } from './GameLogic.js';
+import { LEVEL_COLORS } from './levelColors.js';
 import { createBoundingBox, offsets } from './boundingBox.js';
 import { createGrid } from './grid.js';
 import * as vaos from './VAOManager.js';
@@ -47,29 +48,21 @@ const main = async () => {
     const objects = []; // Array to store generated objects
     const shaders = new Map(); // Array to store loaded shaders
 
-    /* --------- Create tetrisshapes --------- */
+    /* --------- Create flat tetrisshapes --------- */
 
-    objects.push(shapeGenerator.createShapeI(vaoManager));
-    objects.push(shapeGenerator.createShapeL(vaoManager));
-    objects.push(shapeGenerator.createShapeN(vaoManager));
-    objects.push(shapeGenerator.createShapeO(vaoManager));
-    objects.push(shapeGenerator.createShapeT(vaoManager));
-    objects.push(shapeGenerator.createShapeTowerLeft(vaoManager));
-    objects.push(shapeGenerator.createShapeTowerRight(vaoManager));
-    objects.push(shapeGenerator.createShapeTripod(vaoManager));
+    objects.push(shapeGenerator.createShapeMonomino(vaoManager));
+    objects.push(shapeGenerator.createShapeDomino(vaoManager));
+    objects.push(shapeGenerator.createShapeTrominoStraight(vaoManager));
+    objects.push(shapeGenerator.createShapeTrominoL(vaoManager));
+    const squareShape = shapeGenerator.createShapeTetrominoO(vaoManager);
+    objects.push(squareShape);
+    objects.push(shapeGenerator.createShapeTetrominoT(vaoManager));
+    objects.push(shapeGenerator.createShapeTetrominoS(vaoManager));
+    objects.push(shapeGenerator.createShapeTetrominoZ(vaoManager));
+    const tutorialObjects = objects.filter(shape => shape !== squareShape);
+    const getAvailableObjects = () => window.tetrisTutorialMode ? tutorialObjects : objects;
 
     /* --------- Initialize color values --------- */
-
-    const colors = [
-        glm.vec4.fromValues(253.0, 63.0, 89.0, 1.0),   // Salmon
-        glm.vec4.fromValues(254.0, 72.0, 25.0, 1.0),   // Dark orange
-        glm.vec4.fromValues(57.0, 137.0, 47.0, 1.0),   // Dark green
-        glm.vec4.fromValues(0.0, 119.0, 211.0, 1.0),   // Blue
-        glm.vec4.fromValues(120.0, 37.0, 111.0, 1.0),  // Dark purple
-        glm.vec4.fromValues(254.0, 251.0, 52.0, 1.0),  // Yellow
-        glm.vec4.fromValues(1.0, 237.0, 250.0, 1.0),   // Cyan
-        glm.vec4.fromValues(46.0, 63.0, 132.0, 1.0)    // Navy
-    ];
 
     /* --------- Basic setup --------- */
 
@@ -86,64 +79,6 @@ const main = async () => {
     }
 
     console.log(canvas);
-
-    /* --------- Prepare textures for shapes --------- */
-
-    const loadImage = (src) => {
-        return new Promise((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => resolve(image);
-            image.onerror = (error) => reject(error);
-            image.src = src;
-        });
-    };
-
-    const loadTexture = (gl, image) => {
-        const texture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(
-            gl.TEXTURE_2D,
-            0,
-            gl.RGBA,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            image
-        );
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-        gl.generateMipmap(gl.TEXTURE_2D);
-        return texture;
-    };
-
-    const loadTextures = async (gl, imageSrcs) => {
-        const textures = [];
-
-        for (const src of imageSrcs) {
-            const image = await loadImage(src);
-            const texture = loadTexture(gl, image);
-            textures.push(texture);
-        }
-
-        return textures;
-    };
-
-    const imageSrcs = [
-        "textures/texture.jpg",
-        "textures/texture2.jpg",
-        "textures/texture3.jpg",
-        "textures/texture4.png",
-        "textures/texture5.jpg",
-        "textures/texture6.jpg",
-        "textures/texture7.jpg",
-        "textures/texture8.jpg",
-    ];
-
-    const textures = await loadTextures(gl, imageSrcs);
 
     /* --------- Update shader values if slider moves --------- */
 
@@ -178,8 +113,10 @@ const main = async () => {
     /* --------- Initialize the tetris shapes to be drawn --------- */
 
     const boundingBox = createBoundingBox(vaoManager);
-    const grid = createGrid(vaoManager);
+    const { lines: grid, floor: floorGrid } = createGrid(vaoManager);
     const plane = shapeGenerator.generateGroundPlane(vaoManager);
+    const floorSurface = plane.clone();
+    floorSurface.translate([0., -0.002, 0.]);
 
     const cube = await fetch('/objects/cube.obj')
         .then(response => response.text());
@@ -231,7 +168,7 @@ const main = async () => {
 
     /* --------- Initialize gamelogic --------- */
 
-    let gameLogic = new GameLogic(colors, textures);
+    let gameLogic = new GameLogic();
 
     /* --------- Build VAOs for all objects with base shader --------- */
 
@@ -245,7 +182,7 @@ const main = async () => {
 
     /* --------- Start game --------- */
 
-    gameLogic.startGame(objects);
+    gameLogic.startGame(getAvailableObjects());
     if (window.tetrisTutorialMode) {
         gameLogic.isGamePaused = true;
         window.addEventListener('tetris-tutorial-finished', () => {
@@ -293,6 +230,31 @@ const main = async () => {
 
     const lightMatrix = glm.mat4.create();
     glm.mat4.multiply(lightMatrix, projectionMatrixFromLight, lightViewMatrix);
+
+    const gameLevel = document.querySelector('#gameLevel');
+    const levelColors = document.querySelector('#levelColors');
+    const piecesPlaced = document.querySelector('#piecesPlaced');
+    const linesCleared = document.querySelector('#linesCleared');
+    LEVEL_COLORS.forEach(([red, green, blue], index) => {
+        const element = document.createElement('span');
+        element.className = 'level-color';
+        element.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+        element.dataset.height = `Y${index}`;
+        element.title = `Altura Y ${index}`;
+        element.setAttribute('aria-label', `Color de la altura Y ${index}`);
+        levelColors.prepend(element);
+    });
+    let renderedStats = '';
+
+    const updateGameStats = () => {
+        const stats = gameLogic.getStats();
+        const statsKey = `${stats.level}:${stats.piecesPlaced}:${stats.linesCleared}`;
+        if (statsKey === renderedStats) return;
+        renderedStats = statsKey;
+        gameLevel.textContent = String(stats.level);
+        piecesPlaced.textContent = String(stats.piecesPlaced);
+        linesCleared.textContent = String(stats.linesCleared);
+    };
 
     /* --------- Draw --------- */
 
@@ -342,10 +304,15 @@ const main = async () => {
         shader.bind(gl);
         shader.uniformMatrices(gl, camera.getProjectionMatrix(), updatedViewMatrix);
 
+        shader.setColorUniform(gl, glm.vec4.fromValues(255., 255., 255., 1.), null);
         boundingBox.drawVisibleLines(gl, shader, updatedViewMatrix, offsets);
 
         if(keyboardInteraction.gridEnabled) {
+            shader.setColorUniform(gl, glm.vec4.fromValues(255., 255., 255., 1.), null);
             grid.drawLines(gl, shader, updatedViewMatrix);
+            const [red, green, blue] = LEVEL_COLORS[0];
+            shader.setColorUniform(gl, glm.vec4.fromValues(red, green, blue, 1.), null);
+            floorGrid.drawLines(gl, shader, updatedViewMatrix);
         }
 
         // Bind the shader program and set the projection and view matrices as uniforms
@@ -362,12 +329,16 @@ const main = async () => {
             eachObject.draw(gl, shader, updatedViewMatrix);
         });
 
-        shader.setColorUniform(gl, glm.vec4.fromValues(235., 236., 240., 1.), null);
+        shader.setColorUniform(gl, glm.vec4.fromValues(38., 92., 122., 1.), null);
+        shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
+        floorSurface.draw(gl, shader, updatedViewMatrix);
+        shader.setColorUniform(gl, glm.vec4.fromValues(255., 210., 45., 1.), null);
         shader.setTransparency(gl, glm.vec2.fromValues(1., 0.));
         plane.draw(gl, shader, updatedViewMatrix);
         shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
 
-        gameLogic.gameProcedure(objects);
+        gameLogic.gameProcedure(getAvailableObjects());
+        updateGameStats();
         document.querySelector('#gameOverScreen').hidden = !gameLogic.isGameOver;
         if (gameLogic.isGameOver && !gameOverNotified) {
             gameOverNotified = true;
@@ -379,10 +350,10 @@ const main = async () => {
     /* --------- Restart game --------- */
 
     const resetGame = () => {
-        gameLogic = new GameLogic(colors, textures);
+        gameLogic = new GameLogic();
         gameOverNotified = false;
         vaoManager.setTetrisShapeVAO(vaos.VAO_CUBE);
-        gameLogic.startGame(objects);
+        gameLogic.startGame(getAvailableObjects());
         keyboardInteraction.deleteEvents(camera, gameLogic, shaders, vaoManager);
         keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager);
         mouseInteraction.deleteEvents(canvas, camera);

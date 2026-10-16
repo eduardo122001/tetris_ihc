@@ -1,372 +1,89 @@
 import { Shape } from './Shape.js';
 import { VAO } from './VAO.js';
 import * as vaos from './VAOManager.js';
-import * as glm from './gl-matrix/index.js'
+import * as glm from './gl-matrix/index.js';
 
-const offsets = [{
-    // Bottom
-    indexCount: 20,
-    indexOffset: 0,
-    normalVector: glm.vec3.fromValues(0, -1, 0)
-}, {
-    // Left
-    indexCount: 38,
-    indexOffset: 20,
-    normalVector: glm.vec3.fromValues(-1, 0, 0)
-}, {
-    // Back
-    indexCount: 38,
-    indexOffset: 58,
-    normalVector: glm.vec3.fromValues(0, 0, -1)
-}, {
-    // Top
-    indexCount: 20,
-    indexOffset: 96,
-    normalVector: glm.vec3.fromValues(0, 1, 0)
-}, {
-    // Right
-    indexCount: 38,
-    indexOffset: 116,
-    normalVector: glm.vec3.fromValues(1, 0, 0)
-}, {
-    // Front
-    indexCount: 38,
-    indexOffset: 156,
-    normalVector: glm.vec3.fromValues(0, 0, 1)
-}];
+const cellSize = 0.15;
+const halfWidth = (5 * cellSize) / 2;
+const bottom = -0.9;
+const top = 0.9;
+const heightDivisions = Math.round((top - bottom) / cellSize);
 
-const vertices = [
-    // Bottom: Corners
-    [-0.30, -0.90, -0.30],
-    [ 0.30, -0.90, -0.30],
-    [ 0.30, -0.90,  0.30],
-    [-0.30, -0.90,  0.30],
+const offsets = [];
+const vertices = [];
+const indices = [];
 
-    // Bottom: Vertical Cross lines
-    [-0.15, -0.90, -0.30],
-    [-0.15, -0.90,  0.30],
-    [ 0.00, -0.90, -0.30],
-    [ 0.00, -0.90,  0.30],
-    [ 0.15, -0.90, -0.30],
-    [ 0.15, -0.90,  0.30],
+const gridCoordinates = (min, divisions) =>
+    Array.from({ length: divisions + 1 }, (_, index) => min + index * cellSize);
 
-    // Bottom: Horizontal Cross lines
-    [-0.30, -0.90, -0.15],
-    [ 0.30, -0.90, -0.15],
-    [-0.30, -0.90,  0.00],
-    [ 0.30, -0.90,  0.00],
-    [-0.30, -0.90,  0.15],
-    [ 0.30, -0.90,  0.15],
+const xCoordinates = gridCoordinates(-halfWidth, 5);
+const zCoordinates = gridCoordinates(-halfWidth, 5);
+const yCoordinates = gridCoordinates(bottom, heightDivisions);
 
-    // Left: Corners
-    [-0.30,  0.90,  0.30],
-    [-0.30,  0.90, -0.30],
+const addLine = (start, end) => {
+    const firstIndex = vertices.length / 3;
+    vertices.push(...start, ...end);
+    indices.push(firstIndex, firstIndex + 1);
+};
 
-    // Left: Vertical Cross Lines
-    [-0.30,  0.90, -0.15],
-    [-0.30,  0.90,  0.00],
-    [-0.30,  0.90,  0.15],
+const addFace = (normal, lines) => {
+    const indexOffset = indices.length;
+    for (const [start, end] of lines) {
+        addLine(start, end);
+    }
+    offsets.push({
+        indexCount: indices.length - indexOffset,
+        indexOffset,
+        normalVector: glm.vec3.fromValues(...normal)
+    });
+};
 
-    // Left: Horizontal Cross Lines
-    [-0.30, -0.75, -0.30],
-    [-0.30, -0.75,  0.30],
-    [-0.30, -0.60, -0.30],
-    [-0.30, -0.60,  0.30],
-    [-0.30, -0.45, -0.30],
-    [-0.30, -0.45,  0.30],
-    [-0.30, -0.30, -0.30],
-    [-0.30, -0.30,  0.30],
-    [-0.30, -0.15, -0.30],
-    [-0.30, -0.15,  0.30],
-    [-0.30,  0.00, -0.30],
-    [-0.30,  0.00,  0.30],
-    [-0.30,  0.15, -0.30],
-    [-0.30,  0.15,  0.30],
-    [-0.30,  0.30, -0.30],
-    [-0.30,  0.30,  0.30],
-    [-0.30,  0.45, -0.30],
-    [-0.30,  0.45,  0.30],
-    [-0.30,  0.60, -0.30],
-    [-0.30,  0.60,  0.30],
-    [-0.30,  0.75, -0.30],
-    [-0.30,  0.75,  0.30],
-    [-0.30,  0.90, -0.30],
-    [-0.30,  0.90,  0.30],
+const horizontalFace = (y, normal) => {
+    const lines = [];
+    for (const z of zCoordinates) {
+        lines.push([[-halfWidth, y, z], [halfWidth, y, z]]);
+    }
+    for (const x of xCoordinates) {
+        lines.push([[x, y, -halfWidth], [x, y, halfWidth]]);
+    }
+    addFace(normal, lines);
+};
 
-    // Back: Corners
-    [-0.30,  0.90, -0.30],
-    [ 0.30,  0.90, -0.30],
+const xWall = (x, normal) => {
+    const lines = [];
+    for (const y of yCoordinates) {
+        lines.push([[x, y, -halfWidth], [x, y, halfWidth]]);
+    }
+    for (const z of zCoordinates) {
+        lines.push([[x, bottom, z], [x, top, z]]);
+    }
+    addFace(normal, lines);
+};
 
-    // Back: Vertical Cross Lines
-    [-0.15,  0.90, -0.30],
-    [ 0.00,  0.90, -0.30],
-    [ 0.15,  0.90, -0.30],
+const zWall = (z, normal) => {
+    const lines = [];
+    for (const y of yCoordinates) {
+        lines.push([[-halfWidth, y, z], [halfWidth, y, z]]);
+    }
+    for (const x of xCoordinates) {
+        lines.push([[x, bottom, z], [x, top, z]]);
+    }
+    addFace(normal, lines);
+};
 
-    // Back: Horizontal Cross Lines
-    [-0.30, -0.75, -0.30],
-    [ 0.30, -0.75, -0.30],
-    [-0.30, -0.60, -0.30],
-    [ 0.30, -0.60, -0.30],
-    [-0.30, -0.45, -0.30],
-    [ 0.30, -0.45, -0.30],
-    [-0.30, -0.30, -0.30],
-    [ 0.30, -0.30, -0.30],
-    [-0.30, -0.15, -0.30],
-    [ 0.30, -0.15, -0.30],
-    [-0.30,  0.00, -0.30],
-    [ 0.30,  0.00, -0.30],
-    [-0.30,  0.15, -0.30],
-    [ 0.30,  0.15, -0.30],
-    [-0.30,  0.30, -0.30],
-    [ 0.30,  0.30, -0.30],
-    [-0.30,  0.45, -0.30],
-    [ 0.30,  0.45, -0.30],
-    [-0.30,  0.60, -0.30],
-    [ 0.30,  0.60, -0.30],
-    [-0.30,  0.75, -0.30],
-    [ 0.30,  0.75, -0.30],
-    [-0.30,  0.90, -0.30],
-    [ 0.30,  0.90, -0.30],
-
-    // Top: Corners
-    [ 0.30,  0.90,  0.30],
-    [-0.30,  0.90,  0.30],
-    [-0.30,  0.90, -0.30],
-    [ 0.30,  0.90, -0.30],
-
-    // Top: Vertical Cross lines
-    [ 0.15,  0.90,  0.30],
-    [ 0.15,  0.90, -0.30],
-    [ 0.00,  0.90,  0.30],
-    [ 0.00,  0.90, -0.30],
-    [-0.15,  0.90,  0.30],
-    [-0.15,  0.90, -0.30],
-
-    // Top: Cross lines
-    [ 0.30,  0.90,  0.15],
-    [-0.30,  0.90,  0.15],
-    [ 0.30,  0.90,  0.00],
-    [-0.30,  0.90,  0.00],
-    [ 0.30,  0.90, -0.15],
-    [-0.30,  0.90, -0.15],
-
-    // Right: Corners
-    [ 0.30, -0.90, -0.30],
-    [ 0.30, -0.90,  0.30],
-
-    // Right: Vertical Cross Lines
-    [ 0.30, -0.90,  0.15],
-    [ 0.30, -0.90,  0.00],
-    [ 0.30, -0.90, -0.15],
-
-    // Right: Horizontal Cross Lines
-    [ 0.30,  0.75,  0.30],
-    [ 0.30,  0.75, -0.30],
-    [ 0.30,  0.60,  0.30],
-    [ 0.30,  0.60, -0.30],
-    [ 0.30,  0.45,  0.30],
-    [ 0.30,  0.45, -0.30],
-    [ 0.30,  0.30,  0.30],
-    [ 0.30,  0.30, -0.30],
-    [ 0.30,  0.15,  0.30],
-    [ 0.30,  0.15, -0.30],
-    [ 0.30,  0.00,  0.30],
-    [ 0.30,  0.00, -0.30],
-    [ 0.30, -0.15,  0.30],
-    [ 0.30, -0.15, -0.30],
-    [ 0.30, -0.30,  0.30],
-    [ 0.30, -0.30, -0.30],
-    [ 0.30, -0.45,  0.30],
-    [ 0.30, -0.45, -0.30],
-    [ 0.30, -0.60,  0.30],
-    [ 0.30, -0.60, -0.30],
-    [ 0.30, -0.75,  0.30],
-    [ 0.30, -0.75, -0.30],
-    [ 0.30, -0.90,  0.30],
-    [ 0.30, -0.90, -0.30],
-
-    // Front: Corners
-    [ 0.30, -0.90,  0.30],
-    [-0.30, -0.90,  0.30],
-
-    // Front: Vertical Cross Lines
-    [ 0.15, -0.90,  0.30],
-    [ 0.00, -0.90,  0.30],
-    [-0.15, -0.90,  0.30],
-
-    // Front: Horizontal Cross Lines
-    [ 0.30,  0.75,  0.30],
-    [-0.30,  0.75,  0.30],
-    [ 0.30,  0.60,  0.30],
-    [-0.30,  0.60,  0.30],
-    [ 0.30,  0.45,  0.30],
-    [-0.30,  0.45,  0.30],
-    [ 0.30,  0.30,  0.30],
-    [-0.30,  0.30,  0.30],
-    [ 0.30,  0.15,  0.30],
-    [-0.30,  0.15,  0.30],
-    [ 0.30,  0.00,  0.30],
-    [-0.30,  0.00,  0.30],
-    [ 0.30, -0.15,  0.30],
-    [-0.30, -0.15,  0.30],
-    [ 0.30, -0.30,  0.30],
-    [-0.30, -0.30,  0.30],
-    [ 0.30, -0.45,  0.30],
-    [-0.30, -0.45,  0.30],
-    [ 0.30, -0.60,  0.30],
-    [-0.30, -0.60,  0.30],
-    [ 0.30, -0.75,  0.30],
-    [-0.30, -0.75,  0.30],
-    [ 0.30, -0.90,  0.30],
-    [-0.30, -0.90,  0.30]
-];
-
-const indices = [
-    // Bottom: Square
-    0,  1,
-    1,  2,
-    2,  3,
-    3,  0,
-
-    // Bottom: Vertical Cross Lines
-    4,  5,
-    6,  7,
-    8,  9,
-
-    // Bottom: Horizontal Cross Lines
-    10, 11,
-    12, 13,
-    14, 15,
-
-    // Left: Square
-    16, 17,
-    16,  3,
-    17,  0,
-
-    // Left: Vertical Cross Lines
-    18, 10,
-    19, 12,
-    20, 14,
-
-    // Left: Horizontal Cross Lines
-    21, 22,
-    23, 24,
-    25, 26,
-    27, 28,
-    29, 30,
-    31, 32,
-    33, 34,
-    35, 36,
-    37, 38,
-    39, 40,
-    41, 42,
-    43, 44,
-    3,  0,
-
-    // Back: Square
-    45, 46,
-    45,  0,
-    46,  1,
-
-    // Back: Vertical Cross Lines
-    47,  4,
-    48,  6,
-    49,  8,
-
-    // Back: Horizontal Cross Lines
-    50, 51,
-    52, 53,
-    54, 55,
-    56, 57,
-    58, 59,
-    60, 61,
-    62, 63,
-    64, 65,
-    66, 67,
-    68, 69,
-    70, 71,
-    72, 73,
-    0,  1,
-
-    // Top: Square
-    74, 75,
-    75, 76,
-    76, 77,
-    77, 74,
-
-    // Top: Vertical Cross Lines
-    78, 79,
-    80, 81,
-    82, 83,
-
-    // Top: Horizontal Cross Lines
-    84, 85,
-    86, 87,
-    88, 89,
-
-    // Right: Square
-    90, 91,
-    90, 77,
-    91, 74,
-
-    // Right: Vertical Cross Lines
-    92, 84,
-    93, 86,
-    94, 88,
-
-    // Right: Horizontal Cross Lines
-    77, 74,
-    95, 96,
-    97, 98,
-    99, 100,
-    101, 102,
-    103, 104,
-    105, 106,
-    107, 108,
-    109, 110,
-    111, 112,
-    113, 114,
-    115, 116,
-    117, 118,
-    1,  2,
-
-    // Front: Square
-    119, 120,
-    119, 74,
-    120, 75,
-
-    // Front: Vertical Cross Lines
-    121, 78,
-    122, 80,
-    123, 82,
-
-    // Front: Horizontal Cross Lines
-    74, 75,
-    124, 125,
-    126, 127,
-    128, 129,
-    130, 131,
-    132, 133,
-    134, 135,
-    136, 137,
-    138, 139,
-    140, 141,
-    142, 143,
-    144, 145,
-    146, 147
-];
+horizontalFace(bottom, [0, -1, 0]);
+xWall(-halfWidth, [-1, 0, 0]);
+zWall(-halfWidth, [0, 0, -1]);
+horizontalFace(top, [0, 1, 0]);
+xWall(halfWidth, [1, 0, 0]);
+zWall(halfWidth, [0, 0, 1]);
 
 const createBoundingBox = (vaoManager) => {
     const index = vaos.VAO_BOUNDINGBOX;
-    const vao = new VAO(
-        vertices.flat(),
-        null,
-        indices,
-        null
-    );
+    const vao = new VAO(vertices, null, indices, null);
 
     vaoManager.addVAO(vao, index);
     return new Shape(vaoManager, index);
-}
+};
 
 export { createBoundingBox, offsets };

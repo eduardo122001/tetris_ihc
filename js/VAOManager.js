@@ -4,6 +4,7 @@ const VAO_GRID = 2;
 const VAO_BOUNDINGBOX = 3;
 const VAO_AMONGUS = 4;
 const VAO_PLANE = 5;
+const VAO_FLOOR_GRID = 6;
 
 class VAOManager {
     #vaos = new Map()
@@ -44,5 +45,6 @@ export {
     VAO_GRID,
     VAO_BOUNDINGBOX,
     VAO_AMONGUS,
-    VAO_PLANE
+    VAO_PLANE,
+    VAO_FLOOR_GRID
 }

@@ -5,7 +5,7 @@ const cubeHalfLength = 0.15 / 2;
 const cubeLength = 0.15;
 const gridCellSize = 0.15;
 const girdCellSizeInverted = 1 / gridCellSize;
-const gridBottomCorner = glm.vec3.fromValues(-0.3, -0.9, -0.3);
+const gridBottomCorner = glm.vec3.fromValues(-0.375, -0.9, -0.375);
 const fallSound = await new Audio("../audio/fall.mp3");
 const clearSound = await new Audio("../audio/clear.mp3")
 
@@ -18,13 +18,16 @@ const offsets = [
     glm.vec3.fromValues(0, 0, -cubeHalfLength + epsilon),
     glm.vec3.fromValues(0, 0, cubeHalfLength - epsilon)
 ];
-const gridSizes = [4, 12, 4];
+const gridSizes = [5, 12, 5];
 
 class GameLogic {
     #currentTetracubeIndex = -1;
     #collisionMap;
+    #piecesSpawned = 0;
+    #piecesPlaced = 0;
+    #linesCleared = 0;
 
-    constructor(colors, textures) {
+    constructor() {
         this.tetraCubes = [];
         this.#collisionMap = new Map();
         this.isGameOver = false;
@@ -33,8 +36,6 @@ class GameLogic {
         this.last = performance.now();
         this.deltaTime = 0;
         this.gravityFactor = initialGravity;
-        this.colors = colors;
-        this.textures = textures;
         this.currentObject;
     }
 
@@ -58,16 +59,17 @@ class GameLogic {
                 // New position should have been adjusted by checkGravity
                 this.currentObject.translate(newPosition);
                 this.changeFieldStates(this.currentObject);
+                this.#piecesPlaced++;
                 let numberOfLinesDeleted = null;
                 while (numberOfLinesDeleted === null || numberOfLinesDeleted > 0) {
                     numberOfLinesDeleted = this.deleteFullHorizontalLines();
+                    this.#linesCleared += numberOfLinesDeleted;
                     this.tetraCubes = this.tetraCubes.filter((tetraCube) => tetraCube.getCubes().length > 0);
                     this.moveShapesAfterSlice();
                 }
 
                 if(!this.checkIfGameOver()) {
                     fallSound.play();
-                    this.currentObject.setColor(getRandomColor(this.colors));
                     this.placeTetrisObject(tetrisObjects);
                 }
             }
@@ -224,6 +226,46 @@ class GameLogic {
         return true;
     }
 
+    tryRotate(tetracube, axis, angle) {
+        const rotated = tetracube.clone();
+        rotated.rotate(axis, angle);
+
+        if (this.checkTransform(rotated)) {
+            tetracube.rotate(axis, angle);
+            return true;
+        }
+
+        const kickOffsets = [
+            [0, 0, 0],
+            [cubeLength, 0, 0],
+            [-cubeLength, 0, 0],
+            [0, 0, cubeLength],
+            [0, 0, -cubeLength],
+            [cubeLength, 0, cubeLength],
+            [cubeLength, 0, -cubeLength],
+            [-cubeLength, 0, cubeLength],
+            [-cubeLength, 0, -cubeLength],
+            [2 * cubeLength, 0, 0],
+            [-2 * cubeLength, 0, 0],
+            [0, 0, 2 * cubeLength],
+            [0, 0, -2 * cubeLength]
+        ];
+
+        for (const [dx, _, dz] of kickOffsets) {
+            const candidate = tetracube.clone();
+            candidate.rotate(axis, angle);
+            candidate.translate([dx, 0, dz]);
+
+            if (this.checkTransform(candidate)) {
+                tetracube.rotate(axis, angle);
+                tetracube.translate([dx, 0, dz]);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     deleteFullHorizontalLines() {
         let numberOfLinesDeleted = 0;
         for (let y = 0; y < gridSizes[1]; y++) {
@@ -246,9 +288,9 @@ class GameLogic {
                         const cubeDeletion = this.#collisionMap.get(key);
                         this.#collisionMap.delete(key);
                         cubeDeletion();
-                        numberOfLinesDeleted++;
                     }
                 }
+                numberOfLinesDeleted++;
                 clearSound.play();
             }
         }
@@ -286,17 +328,17 @@ class GameLogic {
     }
 
     placeTetrisObject(tetrisObjects) {
-        const tetrisObject = tetrisObjects[Math.floor(Math.random() * tetrisObjects.length)];
+        const singleCubeShape = tetrisObjects.find(shape => shape.getCubes().length === 1);
+        const otherShapes = tetrisObjects.filter(shape => shape.getCubes().length !== 1);
+        const nextPieceNumber = this.#piecesSpawned + 1;
+        const isEveryFourthPiece = nextPieceNumber % 4 === 0;
+        if (isEveryFourthPiece && !singleCubeShape) {
+            throw new Error("No se encontró la pieza de un cubo para el turno cada cuatro piezas.");
+        }
+        const availableShapes = isEveryFourthPiece ? [singleCubeShape] : otherShapes;
+        const tetrisObject = availableShapes[Math.floor(Math.random() * availableShapes.length)];
+        this.#piecesSpawned = nextPieceNumber;
         const clone = tetrisObject.clone();
-        clone.setColor(getRandomColor(this.colors));
-
-        if(Math.random() < 0.27) {
-            clone.setTexture(getRandomTexture(this.textures));
-        }
-
-        if(Math.random() < 0.2) {
-            clone.setTransparency(glm.vec2.fromValues(0., 1.));
-        }
 
         this.tetraCubes.push(clone);
         this.currentObject = clone;
@@ -305,6 +347,19 @@ class GameLogic {
 
     getTetraCubes() {
         return this.currentObject
+    }
+
+    getLevel() {
+        return Math.floor(this.#linesCleared / 10) + 1;
+    }
+
+    getStats() {
+        const level = this.getLevel();
+        return {
+            level,
+            piecesPlaced: this.#piecesPlaced,
+            linesCleared: this.#linesCleared
+        };
     }
 
     checkIfGameOver() {
@@ -351,16 +406,6 @@ const findCubeBorderPoints = (cubeCenter) => {
         glm.vec3.add(cubeBorderPoint, cubeCenter, offset);
         return cubeBorderPoint;
     })
-};
-
-const getRandomColor = (colors) => {
-    const randomIndex = Math.floor(Math.random() * colors.length);
-    return colors[randomIndex];
-};
-
-const getRandomTexture = (textures) => {
-    const randomIndex = Math.floor(Math.random() * textures.length);
-    return textures[randomIndex];
 };
 
 export { GameLogic };
