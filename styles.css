@@ -630,6 +630,21 @@ body {
     display: none;
 }
 
+.tutorial-gesture-symbol {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: clamp(76px, 10vw, 118px);
+    height: clamp(76px, 10vw, 118px);
+    border: 3px solid #17120a;
+    background: #080808;
+    font-size: clamp(42px, 6vw, 68px);
+}
+
+.tutorial-gesture-symbol[hidden] {
+    display: none;
+}
+
 .tutorial-step-text {
     min-height: 0;
     margin: 0;
@@ -1111,6 +1126,15 @@ body {
     image-rendering: pixelated;
 }
 
+.menu-gesture-hint .gesture-card-label {
+    flex: 0 0 auto;
+    width: clamp(48px, 6vw, 68px);
+    height: clamp(48px, 6vw, 68px);
+    border: 2px solid #17120a;
+    background: #080808;
+    font-size: clamp(27px, 3.6vw, 38px);
+}
+
 .game-menu-panel .menu-speech-bubble::before,
 .game-menu-panel .menu-speech-bubble::after {
     top: auto;
@@ -1216,6 +1240,12 @@ body {
     .menu-gesture-hint img {
         width: 42px;
         height: 42px;
+    }
+
+    .menu-gesture-hint .gesture-card-label {
+        width: 42px;
+        height: 42px;
+        font-size: 25px;
     }
 
     .game-menu-panel .menu-options {

@@ -157,9 +157,6 @@ def recibir_datos():
     if source not in datos_actuales:
         return "Fuente no válida", 400
 
-    payload_raw = request.get_data(as_text=True)
-    print(f"[NUEVO DATO {source.upper()}]: {payload_raw}")
-
     try:
         payload = json.loads(request.get_data(as_text=True))
     except (TypeError, ValueError):
@@ -170,19 +167,6 @@ def recibir_datos():
     datos_actuales[source] = json.dumps(payload, separators=(',', ':'))
     ultima_lectura[source] = time.monotonic()
     return "OK", 200
-
-# @app.route('/stream')
-# def stream():
-#     source = request.args.get('source', 'esp')
-#     if source not in datos_actuales:
-#         return "Fuente no válida", 400
-#
-#     def generar_eventos():
-#         while True:
-#             yield f"data: {datos_actuales[source]}\n\n"
-#             time.sleep(0.05)
-#
-#     return Response(generar_eventos(), mimetype='text/event-stream')
 
 @app.route('/stream')
 def stream():
@@ -195,14 +179,7 @@ def stream():
             yield f"data: {datos_actuales[source]}\n\n"
             time.sleep(0.05)
 
-    response = Response(generar_eventos(), mimetype='text/event-stream')
-    # --- CABECERAS ANTI-CACHÉ CRÍTICAS PARA SSE ---
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    response.headers['Connection'] = 'keep-alive'
-    response.headers['X-Accel-Buffering'] = 'no'
-    return response
+    return Response(generar_eventos(), mimetype='text/event-stream')
 
 if __name__ == '__main__':
     hilo_udp = threading.Thread(target=escuchar_udp_descubrimiento, daemon=True)
