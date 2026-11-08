@@ -30,16 +30,19 @@ body {
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background: #000;
+    background:
+        linear-gradient(rgba(4, 2, 10, 0.18), rgba(4, 2, 10, 0.18)),
+        url("./neon-tunnel.jpg") center center / cover fixed no-repeat,
+        #090310;
     color: #fff;
     font-family: "Courier New", monospace;
 }
 
 .game-layout {
     display: grid;
-    grid-template-columns: minmax(270px, 1fr) minmax(0, 2fr);
+    grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
     min-height: 100vh;
-    background: #000;
+    background: rgba(6, 2, 12, 0.16);
     color: #fff;
 }
 
@@ -53,7 +56,7 @@ body {
     overflow-y: auto;
     padding: 16px;
     border-right: 2px solid #fff;
-    background: #000;
+    background: rgba(5, 2, 10, 0.24);
 }
 
 .sidebar-title {
@@ -148,8 +151,8 @@ body {
 .gesture-camera video {
     display: block;
     width: 100%;
-    aspect-ratio: 16 / 10;
-    max-height: 170px;
+    aspect-ratio: 4 / 3;
+    max-height: 260px;
     border: 1px solid #888;
     background: #000;
     object-fit: contain;
@@ -182,17 +185,17 @@ body {
     justify-items: center;
     gap: 4px;
     min-width: 0;
-    padding: 6px 3px;
+    padding: 10px 5px;
     border: 1px solid #555;
     color: #ccc;
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.2;
     text-align: center;
 }
 
 .gesture-cards img {
-    width: 42px;
-    height: 42px;
+    width: 72px;
+    height: 72px;
     object-fit: contain;
     image-rendering: pixelated;
 }
@@ -287,7 +290,7 @@ body {
 
 .board-stage {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 76px;
+    grid-template-columns: 76px minmax(0, 1fr) minmax(220px, 300px);
     align-items: center;
     justify-items: center;
     gap: 12px;
@@ -295,7 +298,109 @@ body {
     min-width: 0;
     min-height: 100vh;
     padding: 16px;
-    background: #000;
+    background: rgba(5, 2, 10, 0.06);
+}
+
+.board-canvas {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    isolation: isolate;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.board-canvas::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.board-canvas::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.08);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.12);
+}
+
+.key-sequence-ability {
+    position: absolute;
+    z-index: 20;
+    left: 50%;
+    bottom: 24px;
+    width: min(88%, 430px);
+    box-sizing: border-box;
+    transform: translateX(-50%);
+    padding: 14px 18px;
+    border: 2px solid #fff;
+    background: rgba(0, 0, 0, 0.92);
+    text-align: center;
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.18);
+}
+
+.key-sequence-ability.is-active {
+    animation: ability-panel-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.key-sequence-label {
+    margin: 0 0 10px;
+    color: #ffd22d;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+}
+
+.key-sequence-keys {
+    display: flex;
+    justify-content: center;
+    gap: 9px;
+}
+
+.key-sequence-keys kbd {
+    min-width: 42px;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 2px solid #fff;
+    border-bottom-width: 5px;
+    background: #111;
+    color: #fff;
+    font: bold 18px "Courier New", monospace;
+}
+
+.key-sequence-keys kbd.is-current {
+    border-color: #ffd22d;
+    color: #ffd22d;
+}
+
+.key-sequence-keys kbd.is-completed {
+    border-color: #44cd68;
+    background: #44cd68;
+    color: #111;
+}
+
+.key-sequence-status {
+    min-height: 16px;
+    margin: 10px 0 0;
+    color: #fff;
+    font-size: 11px;
+}
+
+.key-sequence-status[data-state="error"] {
+    color: #ff5b44;
+}
+
+.key-sequence-status[data-state="success"] {
+    color: #44cd68;
+}
+
+@keyframes ability-panel-pulse {
+    from { box-shadow: 0 0 14px rgba(255, 210, 45, 0.16); }
+    to { box-shadow: 0 0 30px rgba(255, 210, 45, 0.42); }
 }
 
 .height-palette {
@@ -304,8 +409,41 @@ body {
     gap: 10px;
     box-sizing: border-box;
     width: 76px;
-    height: min(78vh, 720px);
+    grid-column: 1;
+    grid-row: 1;
+    height: min(100%, 850px, calc(100vh - 32px));
+    max-height: none;
     padding: 8px;
+}
+
+.board-canvas {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-height: calc(100vh - 32px);
+    aspect-ratio: 1;
+}
+
+.gesture-side-panel {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    width: 100%;
+    display: grid;
+    gap: 12px;
+}
+
+.gesture-camera {
+    width: 100%;
+}
+
+.gesture-guide {
+    width: 100%;
+}
+
+.gesture-camera video {
+    max-height: none;
+    aspect-ratio: 4 / 3;
 }
 
 .height-palette h2 {
@@ -320,11 +458,13 @@ body {
 
 #glcanvas {
     display: block;
-    width: min(100%, calc((100vh - 32px) * 550 / 850));
+    position: relative;
+    z-index: 1;
+    width: min(100%, 850px, calc(100vh - 16px));
     height: auto;
     min-width: 0;
     border: 2px solid #fff;
-    background: #000;
+    background: rgba(0, 0, 0, 0.08);
     image-rendering: pixelated;
 }
 
@@ -336,10 +476,7 @@ body {
     place-items: center;
     overflow-y: auto;
     padding: 20px;
-    background:
-        radial-gradient(circle, #ffffff9c 1px, transparent 1.5px) 11px 17px / 71px 59px,
-        radial-gradient(circle, #ffffff70 1px, transparent 1.5px) 38px 9px / 97px 83px,
-        #050607;
+    background: rgba(5, 2, 10, 0.18);
     color: #f4f4f4;
     font-family: "Courier New", monospace;
 }
@@ -351,7 +488,7 @@ body {
     display: grid;
     place-items: center;
     padding: 20px;
-    background: #000c;
+    background: rgba(5, 2, 10, 0.18);
     color: #fff;
     font-family: "Courier New", monospace;
 }
@@ -630,6 +767,21 @@ body {
     display: none;
 }
 
+.tutorial-gesture-symbol {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: clamp(76px, 10vw, 118px);
+    height: clamp(76px, 10vw, 118px);
+    border: 3px solid #17120a;
+    background: #080808;
+    font-size: clamp(42px, 6vw, 68px);
+}
+
+.tutorial-gesture-symbol[hidden] {
+    display: none;
+}
+
 .tutorial-step-text {
     min-height: 0;
     margin: 0;
@@ -691,10 +843,7 @@ body {
     place-items: center;
     overflow-y: auto;
     padding: 24px;
-    background:
-        radial-gradient(circle, #ffffff9c 1px, transparent 1.5px) 11px 17px / 71px 59px,
-        radial-gradient(circle, #ffffff70 1px, transparent 1.5px) 38px 9px / 97px 83px,
-        #050607;
+    background: rgba(5, 2, 10, 0.18);
     color: #f4f4f4;
     font-family: "Courier New", monospace;
 }
@@ -774,6 +923,17 @@ body {
     font: inherit;
     font-weight: 750;
     cursor: pointer;
+}
+
+.loading-start-actions {
+    display: grid;
+    gap: 10px;
+}
+
+.loading-start-secondary {
+    border-color: #fff;
+    background: transparent;
+    color: #fff;
 }
 
 .loading-start:disabled,
@@ -930,7 +1090,7 @@ body {
     }
 
     .board-stage {
-        grid-template-columns: minmax(0, 1fr) 62px;
+        grid-template-columns: 62px minmax(0, 1fr);
         gap: 8px;
         min-height: auto;
         padding: 16px 8px;
@@ -940,6 +1100,13 @@ body {
         width: 62px;
         height: min(78vh, 640px);
         padding: 6px;
+    }
+
+    .gesture-side-panel {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: min(100%, 420px);
+        margin-top: 8px;
     }
 
     .height-palette h2 {
@@ -1111,6 +1278,15 @@ body {
     image-rendering: pixelated;
 }
 
+.menu-gesture-hint .gesture-card-label {
+    flex: 0 0 auto;
+    width: clamp(48px, 6vw, 68px);
+    height: clamp(48px, 6vw, 68px);
+    border: 2px solid #17120a;
+    background: #080808;
+    font-size: clamp(27px, 3.6vw, 38px);
+}
+
 .game-menu-panel .menu-speech-bubble::before,
 .game-menu-panel .menu-speech-bubble::after {
     top: auto;
@@ -1218,6 +1394,12 @@ body {
         height: 42px;
     }
 
+    .menu-gesture-hint .gesture-card-label {
+        width: 42px;
+        height: 42px;
+        font-size: 25px;
+    }
+
     .game-menu-panel .menu-options {
         width: 58%;
         gap: 10px;
@@ -1229,4 +1411,240 @@ body {
         padding: 10px;
         font-size: clamp(14px, 4vw, 18px);
     }
+}
+
+/* Retro-neon visual theme */
+:root {
+    --neon-ink: #090314;
+    --neon-panel: rgba(18, 8, 38, 0.94);
+    --neon-violet: #a855f7;
+    --neon-purple: #7c3aed;
+    --neon-pink: #ff5bc8;
+    --neon-hot-pink: #ff3cac;
+    --neon-soft: #d8b4fe;
+    --neon-line: rgba(232, 121, 249, 0.82);
+}
+
+body {
+    background:
+        radial-gradient(circle at 78% 12%, rgba(255, 59, 180, 0.24), transparent 34%),
+        linear-gradient(135deg, rgba(12, 4, 28, 0.58), rgba(52, 8, 71, 0.34)),
+        url("./neon-tunnel.jpg") center center / cover fixed no-repeat,
+        var(--neon-ink);
+}
+
+.game-layout,
+.board-stage,
+.game-sidebar {
+    background-color: transparent;
+}
+
+.game-sidebar {
+    border-right-color: var(--neon-line);
+    background:
+        linear-gradient(180deg, rgba(16, 7, 35, 0.9), rgba(7, 3, 18, 0.72)),
+        rgba(5, 2, 10, 0.4);
+    backdrop-filter: blur(8px);
+}
+
+.retro-panel,
+.sensor-connection {
+    border-color: var(--neon-line);
+    background:
+        linear-gradient(145deg, rgba(33, 13, 68, 0.94), rgba(12, 5, 29, 0.96));
+    box-shadow:
+        inset 0 0 18px rgba(168, 85, 247, 0.08),
+        0 0 14px rgba(168, 85, 247, 0.14);
+}
+
+.retro-panel h3,
+.sidebar-title,
+.game-score dd,
+.game-level strong {
+    color: #f5d0fe;
+    text-shadow: 0 0 9px rgba(232, 121, 249, 0.72);
+}
+
+.retro-panel,
+.sensor-connection select,
+.gesture-camera video,
+.gesture-cards li,
+.height-palette,
+#glcanvas {
+    border-color: rgba(232, 121, 249, 0.76);
+}
+
+.sensor-connection select,
+.gesture-camera video {
+    background: #070311;
+}
+
+.gesture-cards li[data-active="true"] {
+    border-color: var(--neon-pink);
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-hot-pink));
+    color: #fff;
+    box-shadow: 0 0 16px rgba(255, 91, 200, 0.64);
+}
+
+.control-deck div.slider input {
+    accent-color: var(--neon-pink);
+}
+
+.board-canvas {
+    border-radius: 6px;
+    background:
+        radial-gradient(circle at 50% 42%, rgba(168, 85, 247, 0.14), transparent 58%),
+        rgba(7, 2, 18, 0.44);
+}
+
+#glcanvas {
+    box-shadow:
+        0 0 0 1px rgba(255, 91, 200, 0.28),
+        0 0 26px rgba(168, 85, 247, 0.38),
+        inset 0 0 30px rgba(255, 91, 200, 0.08);
+}
+
+.height-palette {
+    background: rgba(14, 5, 31, 0.92);
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.24);
+}
+
+.level-color {
+    box-shadow: inset 0 0 7px rgba(255, 255, 255, 0.22), 0 0 5px rgba(216, 180, 254, 0.16);
+}
+
+.loading-screen,
+.game-menu,
+.game-over-screen {
+    background:
+        radial-gradient(circle at 72% 20%, rgba(255, 59, 180, 0.22), transparent 38%),
+        linear-gradient(135deg, rgba(7, 3, 18, 0.82), rgba(43, 7, 63, 0.76)),
+        url("./neon-tunnel.jpg") center center / cover fixed;
+}
+
+.loading-panel,
+.game-over-panel,
+.game-menu-panel {
+    border-color: var(--neon-pink);
+    background:
+        linear-gradient(145deg, rgba(24, 8, 51, 0.97), rgba(10, 4, 24, 0.97));
+    box-shadow:
+        8px 8px 0 rgba(255, 91, 200, 0.22),
+        0 0 38px rgba(168, 85, 247, 0.34);
+}
+
+.loading-kicker,
+.menu-kicker,
+.loading-message {
+    color: var(--neon-soft);
+}
+
+.loading-pixel-label,
+.loading-panel h1 {
+    color: #fff0fb;
+    text-shadow:
+        0 0 8px var(--neon-pink),
+        0 0 22px rgba(168, 85, 247, 0.8);
+}
+
+.loading-progress {
+    border-color: var(--neon-pink);
+    background: rgba(6, 2, 15, 0.92);
+    box-shadow: 0 0 14px rgba(255, 91, 200, 0.28);
+}
+
+.loading-progress span[data-state="passed"] {
+    background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.loading-start,
+.loading-actions button,
+.game-over-panel button,
+.menu-options button,
+.tutorial-actions button {
+    border-color: var(--neon-pink);
+    background: linear-gradient(135deg, #8b5cf6, var(--neon-hot-pink));
+    color: #fff;
+    box-shadow: 0 0 15px rgba(255, 91, 200, 0.28);
+}
+
+.loading-start-secondary,
+.menu-options button + button {
+    border-color: var(--neon-soft);
+    background: rgba(17, 6, 37, 0.92);
+    color: #f5d0fe;
+}
+
+.game-menu-panel .menu-options button {
+    border-color: var(--neon-pink);
+    background: linear-gradient(90deg, #7c3aed, #ec4899);
+    color: #fff;
+    box-shadow: 5px 5px 0 rgba(255, 91, 200, 0.34);
+}
+
+.game-menu-panel .menu-options button + button {
+    background: linear-gradient(90deg, rgba(27, 10, 58, 0.95), rgba(85, 27, 110, 0.95));
+    color: #f5d0fe;
+}
+
+.game-menu-panel .menu-speech-bubble,
+.tutorial-bubble {
+    border-color: var(--neon-pink);
+    background: linear-gradient(145deg, #24104d, #52106a);
+    box-shadow:
+        7px 7px 0 rgba(255, 91, 200, 0.3),
+        0 0 20px rgba(168, 85, 247, 0.32);
+}
+
+.game-menu-panel .menu-prompt,
+.menu-gesture-hint,
+.tutorial-bubble,
+.tutorial-bubble h1,
+.tutorial-step-text,
+.tutorial-kicker {
+    color: #fff0fb;
+}
+
+.game-menu-panel .menu-speech-bubble::after {
+    border-top-color: #52106a;
+}
+
+.game-menu-panel .menu-speech-bubble::before {
+    border-top-color: var(--neon-pink);
+}
+
+.tutorial-bubble::before {
+    border-left-color: #52106a;
+}
+
+.tutorial-bubble::after {
+    border-left-color: var(--neon-pink);
+}
+
+.tutorial-actions .tutorial-skip {
+    border-color: var(--neon-soft);
+    background: rgba(14, 5, 31, 0.96);
+    color: #fff;
+}
+
+.key-sequence-ability {
+    border-color: var(--neon-pink);
+    background: rgba(15, 5, 34, 0.96);
+    box-shadow: 0 0 24px rgba(255, 91, 200, 0.42);
+}
+
+.key-sequence-label,
+.key-sequence-keys kbd.is-current {
+    color: var(--neon-pink);
+}
+
+.key-sequence-keys kbd.is-current {
+    border-color: var(--neon-pink);
+}
+
+.key-sequence-keys kbd.is-completed {
+    border-color: #f0abfc;
+    background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+    color: #fff;
 }

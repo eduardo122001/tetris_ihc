@@ -10,6 +10,8 @@ import { LEVEL_COLORS } from './levelColors.js';
 import { createBoundingBox, offsets } from './boundingBox.js';
 import { createGrid } from './grid.js';
 import * as vaos from './VAOManager.js';
+import { AbilityManager } from './AbilityManager.js';
+import { createDirectionGuides } from './directionGuides.js';
 
 const main = async () => {
 
@@ -25,6 +27,7 @@ const main = async () => {
     const keyboardInteraction = new KeyboardInteraction();
     const mouseInteraction = new MouseInteraction();
     const vaoManager = new vaos.VAOManager();
+    const abilityManager = new AbilityManager();
 
     /* --------- Initialize shading values --------- */ 
 
@@ -114,6 +117,7 @@ const main = async () => {
 
     const boundingBox = createBoundingBox(vaoManager);
     const { lines: grid, floor: floorGrid, perspectiveFloor } = createGrid(vaoManager);
+    const directionGuides = await createDirectionGuides(gl, vaoManager);
     const plane = shapeGenerator.generateGroundPlane(vaoManager);
     const floorSurface = plane.clone();
     floorSurface.translate([0., -0.002, 0.]);
@@ -195,7 +199,7 @@ const main = async () => {
 
     /* --------- Register keyboard and mouse events --------- */
 
-    keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager);
+    keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager, abilityManager);
     mouseInteraction.registerEvents(canvas, camera);
     window.dispatchEvent(new Event('tetris-started'));
 
@@ -292,7 +296,7 @@ const main = async () => {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        gl.clearColor(0., 0., 0., 1.0);
+        gl.clearColor(0., 0., 0., 0.);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -328,6 +332,19 @@ const main = async () => {
             shader.setColorUniform(gl, glm.vec4.fromValues(floorRed, floorGreen, floorBlue, 1.), null);
             floorGrid.drawLines(gl, shader, updatedViewMatrix);
         }
+        shader = keyboardInteraction.selectedShader();
+        shader.bind(gl);
+        shader.uniformMatrices(gl, camera.getProjectionMatrix(), updatedViewMatrix);
+        shader.lightingUniforms(gl, camera.viewMatrix);
+        shader.updateShadingCoefficients(gl, ambientProduct, diffuseProduct, specularProduct);
+        shader.setShadingUniforms(gl, ambientProduct, diffuseProduct, specularProduct, shininess);
+        shader.shadowingUniforms(gl, lightMatrix, shadowTexture);
+        shader.setTransparency(gl, glm.vec2.fromValues(0., 0.));
+        shader.setColorUniform(gl, glm.vec4.fromValues(0., 0., 0., 0.), directionGuides.up);
+        directionGuides.up.drawTextured(gl, shader, updatedViewMatrix);
+        directionGuides.down.drawTextured(gl, shader, updatedViewMatrix);
+        directionGuides.left.drawTextured(gl, shader, updatedViewMatrix);
+        directionGuides.right.drawTextured(gl, shader, updatedViewMatrix);
 
         // Bind the shader program and set the projection and view matrices as uniforms
         shader = keyboardInteraction.selectedShader();
@@ -404,7 +421,7 @@ const main = async () => {
         vaoManager.setTetrisShapeVAO(vaos.VAO_CUBE);
         gameLogic.startGame(getAvailableObjects());
         keyboardInteraction.deleteEvents(camera, gameLogic, shaders, vaoManager);
-        keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager);
+        keyboardInteraction.registerEvents(camera, gameLogic, shaders, vaoManager, abilityManager);
         mouseInteraction.deleteEvents(canvas, camera);
         mouseInteraction.registerEvents(canvas, camera);
         camera.resetCamera();

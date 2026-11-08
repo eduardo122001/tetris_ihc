@@ -3,18 +3,18 @@ export const GRID_CELL_SIZE = 0.15;
 export const GRID_BOTTOM_Y = -0.9;
 
 export const LEVEL_COLORS = Object.freeze([
-    Object.freeze([44, 115, 204]),
-    Object.freeze([54, 174, 235]),
-    Object.freeze([51, 205, 190]),
-    Object.freeze([68, 205, 104]),
-    Object.freeze([145, 220, 73]),
-    Object.freeze([221, 226, 62]),
-    Object.freeze([255, 202, 58]),
-    Object.freeze([255, 143, 58]),
-    Object.freeze([246, 91, 68]),
-    Object.freeze([239, 61, 103]),
-    Object.freeze([212, 57, 172]),
-    Object.freeze([145, 61, 190])
+    Object.freeze([255, 48, 48]),
+    Object.freeze([255, 103, 26]),
+    Object.freeze([255, 214, 51]),
+    Object.freeze([190, 255, 45]),
+    Object.freeze([58, 255, 92]),
+    Object.freeze([45, 255, 189]),
+    Object.freeze([41, 225, 255]),
+    Object.freeze([48, 132, 255]),
+    Object.freeze([97, 71, 255]),
+    Object.freeze([171, 62, 255]),
+    Object.freeze([255, 54, 231]),
+    Object.freeze([255, 62, 139])
 ]);
 
 export function getHeightColorIndex(worldY) {

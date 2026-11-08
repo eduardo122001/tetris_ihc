@@ -17,13 +17,13 @@ class KeyboardInteraction {
 
     /* -------- Register keybord events for movement -------- */
 
-    registerEvents(camera, gameLogic, shaders, vaoManager) {
+    registerEvents(camera, gameLogic, shaders, vaoManager, abilityManager) {
         this.gridEnabled = false;
         this.#selectedShader = shaders.get("sBaseGS");
         this.#isPhongShader = false;
         this.#isDrawCubes = true;
         this.#isAmogusMode = false;
-        this.#handler = (event) => this.#handleKeyDown(event, camera, gameLogic, shaders, vaoManager);
+        this.#handler = (event) => this.#handleKeyDown(event, camera, gameLogic, shaders, vaoManager, abilityManager);
         document.addEventListener('keydown', this.#handler);
     }
 
@@ -54,7 +54,16 @@ class KeyboardInteraction {
 
     /* -------- Handle keyboard input -------- */
 
-    #handleKeyDown(event, camera, gameLogic, shaders, vaoManager) {
+    #handleKeyDown(event, camera, gameLogic, shaders, vaoManager, abilityManager) {
+        if (abilityManager?.handleKey(event.key)) {
+            event.preventDefault();
+            return;
+        }
+
+        if (event.key.toLowerCase() === 'h' && abilityManager?.activate('keySequence')) {
+            event.preventDefault();
+            return;
+        }
 
         switch(event.key) {
             /* -------- Translate shape -------- */

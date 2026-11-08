@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Depurador de Sensores</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #1e1e1e; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        .panel { background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .raw-data { font-family: monospace; font-size: 18px; display: flex; justify-content: space-between; background: #000; padding: 15px; border-radius: 5px; }
+        canvas { max-height: 300px; }
+        h2 { margin-top: 0; color: #4CAF50; display: inline-block; }
+        .controls { margin-bottom: 20px; background: #333; padding: 15px; border-radius: 8px; }
+        select { font-size: 18px; padding: 5px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <label for="sensorSource" style="font-size: 18px; font-weight: bold;">Ver datos de: </label>
+        <select id="sensorSource">
+            <option value="esp">Microcontrolador ESP8266</option>
+            <option value="mobile">Teléfono Móvil</option>
+        </select>
+        <span id="connectionStatus" style="margin-left: 15px; color: #aaa;">Conectando...</span>
+    </div>
+
+    <div class="panel">
+        <h2>Valores Actuales (En crudo)</h2>
+        <div class="raw-data" id="rawData">Esperando datos...</div>
+    </div>
+
+    <div class="panel">
+        <h2>Movimiento Principal (Ejes X, Y, Z)</h2>
+        <p>Móvil: Muestra la inclinación del teléfono. ESP: Muestra Acelerómetro.</p>
+        <canvas id="accelChart"></canvas>
+    </div>
+
+    <div class="panel">
+        <h2>Datos Secundarios (Giroscopio ESP)</h2>
+        <p>Solo el ESP envía datos en esta gráfica actualmente.</p>
+        <canvas id="gyroChart"></canvas>
+    </div>
+</div>
+
+<script>
+    const maxDataPoints = 50; 
+    
+    const ctxAccel = document.getElementById('accelChart').getContext('2d');
+    const ctxGyro = document.getElementById('gyroChart').getContext('2d');
+
+    const accelChart = new Chart(ctxAccel, {
+        type: 'line',
+        data: {
+            labels: Array(maxDataPoints).fill(''),
+            datasets: [
+                { label: 'Eje X', borderColor: '#ff6384', data: Array(maxDataPoints).fill(0), tension: 0.1 },
+                { label: 'Eje Y', borderColor: '#36a2eb', data: Array(maxDataPoints).fill(0), tension: 0.1 },
+                { label: 'Eje Z', borderColor: '#ffce56', data: Array(maxDataPoints).fill(0), tension: 0.1 }
+            ]
+        },
+        options: { animation: false, scales: { y: { suggestedMin: -10, suggestedMax: 10 } } } // Escala más amplia para el móvil
+    });
+
+    const gyroChart = new Chart(ctxGyro, {
+        type: 'line',
+        data: {
+            labels: Array(maxDataPoints).fill(''),
+            datasets: [
+                { label: 'Giro X', borderColor: '#ff6384', data: Array(maxDataPoints).fill(0), tension: 0.1 },
+                { label: 'Giro Y', borderColor: '#36a2eb', data: Array(maxDataPoints).fill(0), tension: 0.1 },
+                { label: 'Giro Z', borderColor: '#ffce56', data: Array(maxDataPoints).fill(0), tension: 0.1 }
+            ]
+        },
+        options: { animation: false, scales: { y: { suggestedMin: -200, suggestedMax: 200 } } }
+    });
+
+    let sensorEvents = null;
+
+    function startStream(source) {
+        if (sensorEvents) {
+            sensorEvents.close();
+        }
+        
+        document.getElementById('connectionStatus').textContent = `Escuchando a: ${source}...`;
+        sensorEvents = new EventSource(`/stream?source=${source}`);
+
+        sensorEvents.onmessage = function(event) {
+            try {
+                const reading = JSON.parse(event.data);
+                
+                let x = 0, y = 0, z = 0;
+                let gx = 0, gy = 0, gz = 0;
+
+                // Extraer datos dependiendo del formato (Móvil vs ESP)
+                if (reading.gyro) {
+                    // Formato Móvil
+                    x = reading.gyro.x || 0;
+                    y = reading.gyro.y || 0;
+                    z = reading.gyro.z || 0;
+                } else {
+                    // Formato ESP
+                    x = reading.x || 0;
+                    y = reading.y || 0;
+                    z = reading.z || 0;
+                    gx = reading.gx || 0;
+                    gy = reading.gy || 0;
+                    gz = reading.gz || 0;
+                }
+                
+                document.getElementById('rawData').innerHTML = 
+                    `<span>Ejes -> X: ${x.toFixed(2)} | Y: ${y.toFixed(2)} | Z: ${z.toFixed(2)}</span>` +
+                    `<span>Giro -> X: ${gx.toFixed(1)} | Y: ${gy.toFixed(1)} | Z: ${gz.toFixed(1)}</span>`;
+
+                function updateChart(chart, d1, d2, d3) {
+                    chart.data.datasets[0].data.push(d1);
+                    chart.data.datasets[1].data.push(d2);
+                    chart.data.datasets[2].data.push(d3);
+                    chart.data.datasets[0].data.shift();
+                    chart.data.datasets[1].data.shift();
+                    chart.data.datasets[2].data.shift();
+                    chart.update();
+                }
+
+                updateChart(accelChart, x, y, z);
+                updateChart(gyroChart, gx, gy, gz);
+
+            } catch (e) {
+                console.error("Error leyendo datos", e);
+            }
+        };
+    }
+
+    // Cambiar fuente de datos desde el selector
+    document.getElementById('sensorSource').addEventListener('change', (e) => {
+        // Resetear gráficas al cambiar
+        accelChart.data.datasets.forEach(ds => ds.data.fill(0));
+        gyroChart.data.datasets.forEach(ds => ds.data.fill(0));
+        startStream(e.target.value);
+    });
+
+    // Iniciar con el ESP por defecto
+    startStream('esp');
+</script>
+
+</body>
+</html>

@@ -39,7 +39,7 @@ class Camera {
         this.rotateCamera('y', -ROTATION_ANGLE);
         this.rotateCamera('x', ROTATION_ANGLE);
 
-        this.zoom(glm.vec3.fromValues(1 - 0.35, 1 - 0.35, 1 - 0.35));
+        this.zoom(glm.vec3.fromValues(0.98, 0.98, 0.98));
     }
 
     /* -------- Initialize both orthogonal and projection matrix -------- */

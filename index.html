@@ -20,7 +20,12 @@
       </div>
       <h1 id="loadingTitle">Cargando Tetris</h1>
       <p id="loadingMessage" class="loading-message">Iniciando verificaciones de cámara, gestos y giroscopio…</p>
-      <button id="startChecksButton" class="loading-start" type="button" hidden>Iniciar verificaciones</button>
+      <div class="loading-start-actions">
+        <button id="startChecksButton" class="loading-start" type="button">Iniciar verificaciones</button>
+        <button id="skipChecksButton" class="loading-start loading-start-secondary" type="button">
+          Ir al menú sin cámara ni móvil
+        </button>
+      </div>
       <ul class="loading-checks" aria-live="polite">
         <li data-loading-check="camera"><span>Cámara y modelo de gestos</span><strong>Pendiente</strong></li>
         <li data-loading-check="gyro"><span>Giroscopio (obligatorio)</span><strong>Pendiente</strong></li>
@@ -47,14 +52,14 @@
       <div class="menu-guide">
         <img class="capibara-image" src="capibara.jpg" alt="Capibara astronauta" />
         <div class="menu-speech-bubble">
-          <p class="menu-prompt">¿Qué hacemos ahora? Muestra tu mano a la camara y haz un gesto.</p>
+          <p class="menu-prompt">¿Qué hacemos ahora? Haz un gesto de la mano a la camara</p>
           <div class="menu-gesture-hints">
             <div class="menu-gesture-hint">
               <img src="apuntando.png" alt="Gesto de apuntar con el índice">
               <span>Jugar</span>
             </div>
             <div class="menu-gesture-hint">
-              <img src="victoria.png" alt="Gesto de victoria">
+               <img src="iloveyou.png" alt="Gesto I love you">
               <span>Iniciar tutorial</span>
             </div>
           </div>
@@ -62,7 +67,7 @@
       </div>
       <div class="menu-options">
         <button id="playMenuButton" type="button"><span>Jugar · Índice</span></button>
-        <button id="tutorialMenuButton" type="button"><span>Tutorial · Victoria</span></button>
+        <button id="tutorialMenuButton" type="button"><span>Tutorial · I love you</span></button>
       </div>
     </div>
   </section>
@@ -90,6 +95,7 @@
             <h1 id="tutorialTitle">Mueve la pieza a la derecha</h1>
             <div class="tutorial-instruction">
               <img id="tutorialGestureImage" class="tutorial-gesture-image" alt="" hidden>
+              <span id="tutorialGestureSymbol" class="tutorial-gesture-symbol" hidden></span>
               <p id="tutorialStepText" class="tutorial-step-text"></p>
             </div>
             <p id="tutorialProgress" class="tutorial-progress" role="status">Esperando los controles del juego…</p>
@@ -113,21 +119,6 @@
           <div><dt>Piezas colocadas</dt><dd id="piecesPlaced">0</dd></div>
           <div><dt>Líneas destruidas</dt><dd id="linesCleared">0</dd></div>
         </dl>
-      </section>
-
-      <section class="gesture-camera retro-panel" aria-label="Cámara de gestos">
-        <h3>CÁMARA / GESTOS</h3>
-        <video id="webcam" autoplay playsinline></video>
-        <p id="gestureRecognitionStatus" role="status" aria-live="polite">No hay gesto detectado.</p>
-      </section>
-
-      <section class="gesture-guide retro-panel" aria-label="Guía de gestos">
-        <h3>GESTOS / PIEZA Y CÁMARA</h3>
-        <ul class="gesture-cards">
-          <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Índice: rotar en Y</span></li>
-          <li data-gesture-card="Victory"><img src="victoria.png" alt=""><span>Victoria: bajar pieza</span></li>
-          <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Palma: alternar vistas 1 y 2</span></li>
-        </ul>
       </section>
 
       <section class="sensor-connection retro-panel" aria-label="Conexión de sensores">
@@ -170,11 +161,38 @@
     </aside>
 
     <section class="board-stage" aria-label="Tablero de Tetris">
-      <canvas id="glcanvas" width="550" height="850"></canvas>
       <aside class="height-palette retro-panel" aria-label="Colores de las alturas del tablero">
         <h2>ALTURA Y</h2>
         <div class="level-colors" id="levelColors" aria-label="Paleta de colores para las alturas Y de 0 a 11"></div>
       </aside>
+      <div class="board-canvas">
+        <canvas id="glcanvas" width="850" height="850"></canvas>
+        <section
+          id="keySequenceAbility"
+          class="key-sequence-ability"
+          aria-label="Habilidad: secuencia de teclas"
+          hidden
+        >
+          <p class="key-sequence-label">HABILIDAD ESPECIAL</p>
+          <div id="keySequenceKeys" class="key-sequence-keys"></div>
+          <p id="keySequenceStatus" class="key-sequence-status" role="status"></p>
+        </section>
+      </div>
+      <div class="gesture-side-panel">
+        <section class="gesture-camera retro-panel" aria-label="Cámara de gestos">
+          <h3>CÁMARA / GESTOS</h3>
+          <video id="webcam" autoplay playsinline></video>
+          <p id="gestureRecognitionStatus" role="status" aria-live="polite">No hay gesto detectado.</p>
+        </section>
+        <section class="gesture-guide retro-panel" aria-label="Guía de gestos">
+          <h3>ACCIONES</h3>
+          <ul class="gesture-cards">
+            <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Rotar en Y</span></li>
+            <li data-gesture-card="ILoveYou"><img src="iloveyou.png" alt=""><span>Bajar pieza</span></li>
+            <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Alternar vistas 1 y 2</span></li>
+          </ul>
+        </section>
+      </div>
     </section>
   </main>
 
@@ -194,6 +212,7 @@
     const ESP_FALLBACK_TIMEOUT_MS = 5000;
     const loadingMessage = document.querySelector("#loadingMessage");
     const startChecksButton = document.querySelector("#startChecksButton");
+    const skipChecksButton = document.querySelector("#skipChecksButton");
     let resolveFirstGestureFrame;
     let rejectFirstGestureFrame;
     function setLoadingCheck(name, state, message) {
@@ -315,7 +334,7 @@
     function ejecutarComandoGesto(gesto) {
       if (!gameMenu.hidden) {
         if (gesto === "Pointing_Up") selectMenuOption("play", gesto);
-        else if (gesto === "Victory") selectMenuOption("tutorial", gesto);
+        else if (gesto === "ILoveYou") selectMenuOption("tutorial", gesto);
         return;
       }
       if (!window.tetrisGameStarted) return;
@@ -326,7 +345,7 @@
         case "Pointing_Up":
           keyToSimulate = "y";
           break;
-        case "Victory":
+        case "ILoveYou":
           keyToSimulate = " ";
           break;
         case "Open_Palm":
@@ -360,12 +379,14 @@
     const tutorialStepText = document.querySelector("#tutorialStepText");
     const tutorialProgress = document.querySelector("#tutorialProgress");
     const tutorialGestureImage = document.querySelector("#tutorialGestureImage");
+    const tutorialGestureSymbol = document.querySelector("#tutorialGestureSymbol");
     const mobileFallback = document.querySelector("#mobileFallback");
     let cameraReady = false;
     let gyroDetected = false;
     let gamePrepared = window.tetrisGamePrepared === true;
     let mobileSelected = false;
     let espFallbackTimer;
+    let checksSkipped = false;
     let tutorialMode = null;
     let tutorialStep = 0;
     let previousCheatMode = false;
@@ -375,7 +396,6 @@
       Thumb_Down: "Pulgar abajo",
       Thumb_Up: "Pulgar arriba",
       Closed_Fist: "Mano cerrada",
-      Victory: "Victoria",
       ILoveYou: "I love you"
     };
     const gyroTutorialSteps = [
@@ -386,8 +406,8 @@
     ];
     const gestureTutorialSteps = [
       { name: "Pointing_Up", image: "apuntando.png", imageAlt: "Gesto de apuntar con el dedo índice", prompt: "Levanta solo el dedo índice para rotar la pieza sobre el eje Y." },
-      { name: "Victory", image: "victoria.png", imageAlt: "Gesto de victoria con dos dedos", prompt: "Haz el gesto de Victoria para hacer bajar rápidamente la pieza." },
-      { name: "Open_Palm", image: "palma.png", imageAlt: "Gesto de palma abierta", prompt: "Muestra la palma una vez para activar la vista del botón 1. Retira la mano y vuelve a mostrar la palma para activar la vista del botón 2; repite para alternarlas." }
+      { name: "ILoveYou", image: "iloveyou.png", imageAlt: "Gesto I love you", prompt: "Haz el gesto I love you para hacer bajar rápidamente la pieza." },
+      { name: "Open_Palm", image: "palma.png", imageAlt: "Gesto de palma abierta", prompt: "Muestra la palma para activar la vista del botón 1. Retira la mano y vuelve a mostrarla para activar la vista del botón 2; cada detección alterna entre ambas." }
     ];
     const tutorialTotalSteps = gyroTutorialSteps.length + gestureTutorialSteps.length;
 
@@ -454,9 +474,17 @@
         tutorialProgress.textContent = "Mira cómo responde la pieza en el tablero.";
       } else if (tutorialMode === "gesture") {
         const step = gestureTutorialSteps[tutorialStep];
-        tutorialGestureImage.src = step.image;
-        tutorialGestureImage.alt = step.imageAlt;
-        tutorialGestureImage.hidden = false;
+        if (step.symbol) {
+          tutorialGestureImage.hidden = true;
+          tutorialGestureSymbol.textContent = step.symbol;
+          tutorialGestureSymbol.setAttribute("aria-label", step.imageAlt);
+          tutorialGestureSymbol.hidden = false;
+        } else {
+          tutorialGestureImage.src = step.image;
+          tutorialGestureImage.alt = step.imageAlt;
+          tutorialGestureImage.hidden = false;
+          tutorialGestureSymbol.hidden = true;
+        }
         tutorialTitle.textContent = `Gesto ${tutorialStep + 1} de ${gestureTutorialSteps.length}`;
         tutorialStepText.textContent = step.prompt;
         tutorialProgress.textContent = "Espera a que se detecte el gesto; retira la mano entre intentos.";
@@ -565,12 +593,21 @@
     document.querySelector("#playMenuButton").addEventListener("click", () => selectMenuOption("play"));
     document.querySelector("#tutorialMenuButton").addEventListener("click", () => selectMenuOption("tutorial"));
     document.querySelector("#tutorialSkipButton").addEventListener("click", launchGame);
+    skipChecksButton.addEventListener("click", () => {
+      checksSkipped = true;
+      clearTimeout(espFallbackTimer);
+      cameraStream?.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+      loadingScreen.hidden = true;
+      gameMenu.hidden = false;
+    });
 
     startChecksButton.addEventListener("click", async () => {
       if (startChecksButton.textContent === "Recargar página") {
         window.location.reload();
         return;
       }
+      checksSkipped = false;
       startChecksButton.disabled = true;
       startChecksButton.hidden = true;
       loadingMessage.textContent = "Cargando el modelo de gestos y buscando el giroscopio…";
@@ -581,8 +618,10 @@
 
       try {
         await iniciarMediaPipe();
+        if (checksSkipped) return;
         setLoadingCheck("camera", "passed", "Listo");
       } catch (error) {
+        if (checksSkipped) return;
         console.error("Falló la comprobación de la cámara:", error);
         setLoadingCheck("camera", "error", error.message || "No disponible");
         cameraStream?.getTracks().forEach(track => track.stop());
@@ -610,7 +649,6 @@
         tutorialProgress.textContent = "Tablero listo. Inclina el giroscopio y mira cómo responde la pieza.";
       }
     });
-    startChecksButton.click();
   </script>
 
 
@@ -635,9 +673,20 @@
     return undefined;
   }
 
+  let estadoMovimiento = "REPOSO";
+  let acumuladorX = 0;
+  let acumuladorY = 0;
+  let muestrasVuelo = 0;
+  let temporizadorVuelo;
+
+  let suaveX = 0;
+  let suaveZ = 0;
+  
+  // Factor de suavizado (0.15 absorbe bien los temblores. Si lo sientes lento, súbelo a 0.25)
+  const alpha = 0.15; 
+
   function connectSensor(source) {
     if (sensorEvents) sensorEvents.close();
-    currentDirection = null;
     sensorConnectionStatus.textContent = `Conectando al ${source === "esp" ? "ESP" : "móvil"}…`;
     sensorEvents = new EventSource(`/stream?source=${encodeURIComponent(source)}`);
 
@@ -647,31 +696,53 @@
 
     sensorEvents.onmessage = event => {
       let reading;
-      try {
-        reading = JSON.parse(event.data);
-      } catch (error) {
-        console.error("El servidor envió datos de sensor no válidos:", error);
-        sensorConnectionStatus.textContent = "Error: datos del sensor no válidos.";
-        return;
-      }
+      try { reading = JSON.parse(event.data); } catch (e) { return; }
+
+      // const x = reading.x;
+      // const y = reading.y;
+      // const z = reading.z; // Necesitamos el eje Z
+      // if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return;
 
       const x = findAxis(reading, "x");
       const y = findAxis(reading, "y");
+      const z = findAxis(reading, "z") || 0; // Por si el móvil no envía Z
+      
       if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
       if (source === "esp") {
-        const movementThreshold = 0.35;
-        const centerThreshold = 0.15;
-        let direction = null;
-        if (x > movementThreshold && currentDirection !== "ArrowRight") direction = "ArrowLeft";
-        else if (x < -movementThreshold && currentDirection !== "ArrowLeft") direction = "ArrowRight";
-        else if (y > movementThreshold && currentDirection !== "ArrowDown") direction = "ArrowDown";
-        else if (y < -movementThreshold && currentDirection !== "ArrowUp") direction = "ArrowUp";
-        else if (Math.abs(x) < centerThreshold && Math.abs(y) < centerThreshold) currentDirection = null;
+        // --- 2. FILTRO PASO BAJO EN LOS EJES ACTIVOS (X, Z) ---
+        suaveX = (alpha * x) + ((1 - alpha) * suaveX);
+        suaveZ = (alpha * z) + ((1 - alpha) * suaveZ);
 
+        // --- 3. LÓGICA DEL JOYSTICK ---
+        const umbralInclinacion = 0.5; // Qué tanto debes inclinar (0.5 es un buen balance)
+        const umbralCentro = 0.2; // Rango para considerar que la caja volvió a su posición inicial
+
+        let direction = null;
+
+        // Comparamos qué movimiento es más fuerte: Lateral (X) o Frontal/Trasero (Z)
+        if (Math.abs(suaveX) > Math.abs(suaveZ)) {
+          // Movimiento lateral (Derecha / Izquierda)
+          if (suaveX > umbralInclinacion && currentDirection !== "ArrowRight") direction = "ArrowRight";
+          else if (suaveX < -umbralInclinacion && currentDirection !== "ArrowLeft") direction = "ArrowLeft";
+        } else {
+          // Movimiento frontal / trasero (Adelante / Atrás)
+          // Z es negativo (-1.0) hacia adelante, así que disparamos ArrowUp (Rotar pieza en Tetris)
+          if (suaveZ < -umbralInclinacion && currentDirection !== "ArrowUp") direction = "ArrowUp";
+          // Z es positivo (1.0) hacia atrás, disparamos ArrowDown (Bajar pieza)
+          else if (suaveZ > umbralInclinacion && currentDirection !== "ArrowDown") direction = "ArrowDown";
+        }
+
+        // Reinicio al centro: Libera el bloqueo para el siguiente movimiento cuando regresas la caja a su posición de descanso
+        if (Math.abs(suaveX) < umbralCentro && Math.abs(suaveZ) < umbralCentro) {
+          currentDirection = null;
+        }
+
+        // Ejecutar acción
         if (direction) {
           simulateTetrisKey(direction);
           currentDirection = direction;
+          console.log(`Movimiento: ${direction} (X suave: ${suaveX.toFixed(2)}, Z suave: ${suaveZ.toFixed(2)})`);
         }
         return;
       }
@@ -682,9 +753,9 @@
       let direction = null;
       if (Math.max(Math.abs(horizontal), Math.abs(vertical)) >= movementThreshold) {
         if (Math.abs(horizontal) > Math.abs(vertical)) {
-          direction = horizontal > 0 ? "ArrowRight" : "ArrowLeft";
+          direction = horizontal > 0 ? "ArrowUp" : "ArrowDown";
         } else {
-          direction = vertical > 0 ? "ArrowDown" : "ArrowUp";
+          direction = vertical > 0 ? "ArrowRight" : "ArrowLeft";
         }
       }
 
