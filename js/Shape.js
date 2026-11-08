@@ -7,6 +7,7 @@ class Shape {
     #rotationMatrix;
     #vaoManager;
     #fixedVaoIndex = -1;
+    #texture = null;
 
     constructor(vaoManager, fixedVaoIndex = -1) {
         this.#translationMatrix = glm.mat4.create();
@@ -114,6 +115,23 @@ class Shape {
 
     draw(gl, shader, viewMatrix) {
         this.update(gl, shader, viewMatrix);
+
+        const vao = this.#vaoManager.getVAO(this.#fixedVaoIndex);
+        vao.bind(gl);
+        vao.draw(gl);
+    }
+
+    setTexture(texture) {
+        this.#texture = texture;
+    }
+
+    drawTextured(gl, shader, viewMatrix) {
+        this.update(gl, shader, viewMatrix);
+
+        if(this.#texture !== null) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.#texture);
+        }
 
         const vao = this.#vaoManager.getVAO(this.#fixedVaoIndex);
         vao.bind(gl);

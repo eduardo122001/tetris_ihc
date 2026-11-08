@@ -57,5 +57,9 @@ void main() {
         finalColor.a = 0.7;
     }
 
+    if(u_color.a <= 0.5) {
+        finalColor.a = textureColor.a;
+    }
+
     gl_FragColor = finalColor;
 }

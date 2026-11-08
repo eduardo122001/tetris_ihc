@@ -20,7 +20,12 @@
       </div>
       <h1 id="loadingTitle">Cargando Tetris</h1>
       <p id="loadingMessage" class="loading-message">Iniciando verificaciones de cámara, gestos y giroscopio…</p>
-      <button id="startChecksButton" class="loading-start" type="button" hidden>Iniciar verificaciones</button>
+      <div class="loading-start-actions">
+        <button id="startChecksButton" class="loading-start" type="button">Iniciar verificaciones</button>
+        <button id="skipChecksButton" class="loading-start loading-start-secondary" type="button">
+          Ir al menú sin cámara ni móvil
+        </button>
+      </div>
       <ul class="loading-checks" aria-live="polite">
         <li data-loading-check="camera"><span>Cámara y modelo de gestos</span><strong>Pendiente</strong></li>
         <li data-loading-check="gyro"><span>Giroscopio (obligatorio)</span><strong>Pendiente</strong></li>
@@ -116,21 +121,6 @@
         </dl>
       </section>
 
-      <section class="gesture-camera retro-panel" aria-label="Cámara de gestos">
-        <h3>CÁMARA / GESTOS</h3>
-        <video id="webcam" autoplay playsinline></video>
-        <p id="gestureRecognitionStatus" role="status" aria-live="polite">No hay gesto detectado.</p>
-      </section>
-
-      <section class="gesture-guide retro-panel" aria-label="Guía de gestos">
-        <h3>GESTOS / PIEZA Y CÁMARA</h3>
-        <ul class="gesture-cards">
-          <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Índice: rotar en Y</span></li>
-          <li data-gesture-card="ILoveYou"><img src="iloveyou.png" alt="" ></span><span>I love you: bajar pieza</span></li>
-          <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Palma: alternar vistas 1 y 2</span></li>
-        </ul>
-      </section>
-
       <section class="sensor-connection retro-panel" aria-label="Conexión de sensores">
         <h3>GIROSCOPIO</h3>
         <label for="gyroSource">Giroscopio:</label>
@@ -171,11 +161,38 @@
     </aside>
 
     <section class="board-stage" aria-label="Tablero de Tetris">
-      <canvas id="glcanvas" width="550" height="850"></canvas>
       <aside class="height-palette retro-panel" aria-label="Colores de las alturas del tablero">
         <h2>ALTURA Y</h2>
         <div class="level-colors" id="levelColors" aria-label="Paleta de colores para las alturas Y de 0 a 11"></div>
       </aside>
+      <div class="board-canvas">
+        <canvas id="glcanvas" width="850" height="850"></canvas>
+        <section
+          id="keySequenceAbility"
+          class="key-sequence-ability"
+          aria-label="Habilidad: secuencia de teclas"
+          hidden
+        >
+          <p class="key-sequence-label">HABILIDAD ESPECIAL</p>
+          <div id="keySequenceKeys" class="key-sequence-keys"></div>
+          <p id="keySequenceStatus" class="key-sequence-status" role="status"></p>
+        </section>
+      </div>
+      <div class="gesture-side-panel">
+        <section class="gesture-camera retro-panel" aria-label="Cámara de gestos">
+          <h3>CÁMARA / GESTOS</h3>
+          <video id="webcam" autoplay playsinline></video>
+          <p id="gestureRecognitionStatus" role="status" aria-live="polite">No hay gesto detectado.</p>
+        </section>
+        <section class="gesture-guide retro-panel" aria-label="Guía de gestos">
+          <h3>ACCIONES</h3>
+          <ul class="gesture-cards">
+            <li data-gesture-card="Pointing_Up"><img src="apuntando.png" alt=""><span>Rotar en Y</span></li>
+            <li data-gesture-card="ILoveYou"><img src="iloveyou.png" alt=""><span>Bajar pieza</span></li>
+            <li data-gesture-card="Open_Palm"><img src="palma.png" alt=""><span>Alternar vistas 1 y 2</span></li>
+          </ul>
+        </section>
+      </div>
     </section>
   </main>
 
@@ -195,6 +212,7 @@
     const ESP_FALLBACK_TIMEOUT_MS = 5000;
     const loadingMessage = document.querySelector("#loadingMessage");
     const startChecksButton = document.querySelector("#startChecksButton");
+    const skipChecksButton = document.querySelector("#skipChecksButton");
     let resolveFirstGestureFrame;
     let rejectFirstGestureFrame;
     function setLoadingCheck(name, state, message) {
@@ -368,6 +386,7 @@
     let gamePrepared = window.tetrisGamePrepared === true;
     let mobileSelected = false;
     let espFallbackTimer;
+    let checksSkipped = false;
     let tutorialMode = null;
     let tutorialStep = 0;
     let previousCheatMode = false;
@@ -574,12 +593,21 @@
     document.querySelector("#playMenuButton").addEventListener("click", () => selectMenuOption("play"));
     document.querySelector("#tutorialMenuButton").addEventListener("click", () => selectMenuOption("tutorial"));
     document.querySelector("#tutorialSkipButton").addEventListener("click", launchGame);
+    skipChecksButton.addEventListener("click", () => {
+      checksSkipped = true;
+      clearTimeout(espFallbackTimer);
+      cameraStream?.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+      loadingScreen.hidden = true;
+      gameMenu.hidden = false;
+    });
 
     startChecksButton.addEventListener("click", async () => {
       if (startChecksButton.textContent === "Recargar página") {
         window.location.reload();
         return;
       }
+      checksSkipped = false;
       startChecksButton.disabled = true;
       startChecksButton.hidden = true;
       loadingMessage.textContent = "Cargando el modelo de gestos y buscando el giroscopio…";
@@ -590,8 +618,10 @@
 
       try {
         await iniciarMediaPipe();
+        if (checksSkipped) return;
         setLoadingCheck("camera", "passed", "Listo");
       } catch (error) {
+        if (checksSkipped) return;
         console.error("Falló la comprobación de la cámara:", error);
         setLoadingCheck("camera", "error", error.message || "No disponible");
         cameraStream?.getTracks().forEach(track => track.stop());
@@ -619,7 +649,6 @@
         tutorialProgress.textContent = "Tablero listo. Inclina el giroscopio y mira cómo responde la pieza.";
       }
     });
-    startChecksButton.click();
   </script>
 
 
